@@ -23,7 +23,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 support esp8266, esp32
  
-Author:Worawit Sayned (POC Device Magellan team)      
+Author:(POC Device Magellan team)      
 Create Date: 25 April 2022. 
 Modified: 21 september 2022.
 Released for private usage.
