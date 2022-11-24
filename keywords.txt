@@ -1,0 +1,98 @@
+#######################################
+# Syntax Coloring Map For MAGELLAN_MQTT
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+MAGELLAN_MQTT KEYWORD1
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+
+MAGELLAN_SIM7600E_MQTT KEYWORD2
+setting KEYWORD2
+setting.ThingIdentifier KEYWORD2
+setting.ThingSecret KEYWORD2
+setting.IMEI KEYWORD2
+setting.clientBufferSize KEYWORD2
+setting.endpoint KEYWORD2
+WiFiSetting KEYWORD2
+WiFiSetting.SSID KEYWORD2
+WiFiSetting.PASS KEYWORD2
+begin	KEYWORD2
+beginCustom KEYWORD2
+loop KEYWORD2
+heartbeat KEYWORD2
+subscribes KEYWORD2
+getServerTime KEYWORD2
+interval KEYWORD2
+getConfig KEYWORD2
+getControlJSON KEYWORD2
+getServerConfig KEYWORD2
+getServerConfigJSON KEYWORD2
+getServerTime KEYWORD2
+getResponse KEYWORD2
+deserializeControl KEYWORD2
+reconnect KEYWORD2
+isConnected KEYWORD2
+credential KEYWORD2
+credential.getThingIdentifier KEYWORD2
+credential.getThingSecret KEYWORD2
+credential.getPreviousThingIdentifier KEYWORD2
+credential.getPreviousThingSecret KEYWORD2
+credential.setManual KEYWORD2
+credential.reset KEYWORD2
+credential.recovery KEYWORD2
+credential.regenerate KEYWORD2
+info KEYWORD2
+info.getThingIdentifier KEYWORD2
+info.getThingSecret KEYWORD2
+info.getHostName KEYWORD2
+info.getBoardInfo KEYWORD2
+info.getThingToken  KEYWORD2
+report KEYWORD2
+report.send  KEYWORD2
+subscribe KEYWORD2
+subscribe.control KEYWORD2
+subscribe.serverConfig KEYWORD2
+subscribe.getServerTime KEYWORD2
+subscribe.report.response  KEYWORD2
+subscribe.reportWithTimestamp.response KEYWORD2
+subscribe.heartbeat.response KEYWORD2
+sensor KEYWORD2
+sensor.add KEYWORD2
+sensor.remove KEYWORD2
+sensor.toJSONString KEYWORD2
+sensor.report KEYWORD2
+sensor.update KEYWORD2
+sensor.findKey KEYWORD2
+sensor.location.add KEYWORD2
+sensor.location.update KEYWORD2
+clientConfig KEYWORD2
+clientConfig.add KEYWORD2
+clientConfig.remove KEYWORD2
+clientConfig.toJSONString KEYWORD2
+clientConfig.save KEYWORD2
+clientConfig.update KEYWORD2
+clientConfig.findKey KEYWORD2
+serverConfig.request KEYWORD2
+control KEYWORD2
+control.request KEYWORD2
+control.ACK KEYWORD2
+report.send KEYWORD2
+builtInSensor KEYWORD2
+builtInSensor.readTemperature KEYWORD2
+builtInSensor.readHumidity KEYWORD2
+OTA KEYWORD2
+OTA.checkUpdate KEYWORD2
+OTA.executeUpdate KEYWORD2
+OTA.utility KEYWORD2
+OTA.autoUpdate KEYWORD2
+OTA.getAutoUpdate KEYWORD2
+OTA.readDeviceInfo KEYWORD2
+#######################################
+# Constants (LITERAL1)
+#######################################
+
