@@ -12,6 +12,15 @@ MAGELLAN_MQTT KEYWORD1
 
 
 MAGELLAN_SIM7600E_MQTT KEYWORD2
+setting KEYWORD2
+setting.ThingIdentifier KEYWORD2
+setting.ThingSecret KEYWORD2
+setting.IMEI KEYWORD2
+setting.clientBufferSize KEYWORD2
+setting.endpoint KEYWORD2
+WiFiSetting KEYWORD2
+WiFiSetting.SSID KEYWORD2
+WiFiSetting.PASS KEYWORD2
 begin	KEYWORD2
 beginCustom KEYWORD2
 loop KEYWORD2
