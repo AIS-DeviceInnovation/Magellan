@@ -1,0 +1,19 @@
+{
+  "name": "Magellan",
+  "frameworks": "Arduino",
+  "keywords": "AIS, ESP8266, ESP32, Magellan",
+  "description": "Arduino Library for AIS Magellan",
+  "url": "https://github.com/AIS-DeviceInnovation/Magellan",
+  "authors":
+  {
+    "name": "AIS IoT Alliance Program",
+    "maintainer": true
+  },
+  "repository":
+  {
+      "type": "git",
+      "url": "https://github.com/AIS-DeviceInnovation/Magellan.git"
+  }, 
+  "version": "1.0.0",
+  "platforms": "*"
+}
