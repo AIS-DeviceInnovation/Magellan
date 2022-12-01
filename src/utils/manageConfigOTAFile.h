@@ -20,7 +20,7 @@ class manageConfigOTAFile
 private:
     const char* configOTAFilePath = "/configOTAFile.json"; //save every event init fail success
     const char* lastedOTAPath = "/lastedOTAFile.json"; //save only success
-    StaticJsonDocument<256> OTAdoc;
+    StaticJsonDocument<512> OTAdoc;
 public:
     void beginFileSystem();
     boolean checkFileOTA();

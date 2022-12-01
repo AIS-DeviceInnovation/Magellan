@@ -26,7 +26,6 @@ support esp32, esp8266
 Author:(POC Device Magellan team)      
 Create Date: 25 April 2022. 
 Modified: 1 september 2022.
-Released for private usage.
 */
 
 #include "MAGELLAN_MQTT_device_core.h"
@@ -82,6 +81,8 @@ DynamicJsonDocument *Attribute_MQTT_core::docSensor = new DynamicJsonDocument(10
 
 OTA_INFO MAGELLAN_MQTT_device_core::OTA_info;
 
+boolean attemp_download_1 = false;
+boolean attemp_download_2 = false;
 
 
 String b2str(byte* payload, unsigned int length) // convert byte* to String
@@ -272,16 +273,19 @@ boolean pub_Download(unsigned int fw_chunkpart, size_t chunk_size)
 
 boolean pub_UpdateProgress(String FOTA_State, String description)
 {
+  delay(3000);
   String topic = "api/v2/thing/"+attr.ext_Token+"/fotaupdateprogress/req/?FOTAState="+FOTA_State;
   boolean Pub_status = false;
   if(description.indexOf("description") != -1)
   {
+    Pub_status = attr.mqtt_client->publish(topic.c_str(), description.c_str());
     Pub_status = attr.mqtt_client->publish(topic.c_str(), description.c_str());
     Serial.println(F("-------------------------------"));
     Serial.println("# STATE OTA Description: "+ description);
     Serial.println(F("-------------------------------"));
   }
   else{
+    Pub_status = attr.mqtt_client->publish(topic.c_str(), "");
     Pub_status = attr.mqtt_client->publish(topic.c_str(), "");
   }
   
@@ -657,6 +661,8 @@ void updateFirmware(uint8_t *data, size_t len)
 
         String fw_infoInFIleSys;
         JsonObject fw_last = configOTAFile.readObjectLastedOTA();
+        int bufferFW_size = fw_last["sizefirmware"];
+
         fw_last.remove("namefirmware");
         fw_last.remove("sizefirmware");
         fw_last.remove("checksumAlgorithm");
@@ -665,11 +671,21 @@ void updateFirmware(uint8_t *data, size_t len)
         fw_last.remove("versionfirmware");
 
         serializeJson(fw_last, fw_infoInFIleSys);
-
         if(fw_infoInFIleSys.indexOf("null") == -1)
         {
           pubClientConfig(fw_infoInFIleSys);
         }
+        else if ((bufferFW_v.length() > 4 || bufferFW_v.indexOf("null") == -1) && (fw_infoInFIleSys.indexOf("null") != -1)) // handle if fw version !null but some key value found null is still pub client config
+        {
+          pubClientConfig(fw_infoInFIleSys);
+        }
+
+        else if ((bufferFW_v.indexOf("null") != -1) && (bufferFW_size > 0))
+        {
+          pubClientConfig(fw_infoInFIleSys);
+        }
+        
+        
         // write new data only success OTA
         
         // Serial.println("#Debug: "+ configOTAFile.readConfigFileOTA());
@@ -694,6 +710,7 @@ void updateFirmware(uint8_t *data, size_t len)
       configOTAFile.saveSuccessOrFail("fail");
       // readFS_pubClientConfig();
     }  
+  delay(5000);
   ESP.restart();
 }
 
@@ -715,6 +732,8 @@ void hook_FW_download(String topic, uint8_t* payload, unsigned int length)
       attr.prv_cb_timeout_millis = millis();
       updateFirmware(payload, length);
       attr.fw_count_chunk++;
+      attemp_download_1 = false;
+      attemp_download_2 = false;  
       pub_Download(attr.fw_count_chunk, attr.chunk_size);
 
       if(!attr.inProcessOTA)
@@ -2325,6 +2344,7 @@ void MAGELLAN_MQTT_device_core::activeOTA(size_t chunk_size, boolean useChecksum
   else{
     String fw_infoInFIleSys;
     JsonObject fw_last = configOTAFile.readObjectLastedOTA();
+    int bufferFW_size = fw_last["sizefirmware"];
     fw_last.remove("namefirmware");
     fw_last.remove("sizefirmware");
     fw_last.remove("checksumAlgorithm");
@@ -2334,6 +2354,14 @@ void MAGELLAN_MQTT_device_core::activeOTA(size_t chunk_size, boolean useChecksum
     serializeJson(fw_last, fw_infoInFIleSys);
 
     if(fw_infoInFIleSys.indexOf("null") == -1)
+    {
+      this->reportClientConfig(fw_infoInFIleSys);
+    }
+    else if ((bufferFW_v.length() > 4 || bufferFW_v.indexOf("null") == -1) && (fw_infoInFIleSys.indexOf("null") != -1)) // handle if fw version !null but some key value found null is still pub client config
+    {
+      this->reportClientConfig(fw_infoInFIleSys);
+    }
+    else if ((bufferFW_v.indexOf("null") != -1) && (bufferFW_size > 0))
     {
       this->reportClientConfig(fw_infoInFIleSys);
     }
@@ -2352,17 +2380,30 @@ void MAGELLAN_MQTT_device_core::setChunkSize(size_t Chunksize)
 }
 
 // unsigned long prv_cb_timeout_millis = 0;
+
 void checkTimeoutReq_fw_download()
 {
   if(attr.checkTimeout_request_download_fw)
   {
     unsigned long differentTime = millis() - attr.prv_cb_timeout_millis;
+    if(differentTime > 60000 && !attemp_download_1)
+    {
+      Serial.println("#Attemp resume download 1 after checktimeout 1 minute");
+      pub_Download(attr.fw_count_chunk, attr.chunk_size);
+      attemp_download_1 = true;
+    }
+    if(differentTime > 120000 && !attemp_download_2)
+    {
+      Serial.println("#Attemp resume download 2 after checktimeout 2 minute");
+      pub_Download(attr.fw_count_chunk, attr.chunk_size);
+      attemp_download_2 = true;
+    }
     if(differentTime > attr.timeout_req_download_fw)
     {
       pub_UpdateProgress("FAILED","{\"errordescription\":\"Timeout from request firmware download (version. "+ MAGELLAN_MQTT_device_core::OTA_info.firmwareVersion+")\"}");
       configOTAFile.saveSuccessOrFail("fail");
       // readFS_pubClientConfig();
-      Serial.println(F("#device must restart timeout from request firmware dowload 2 minute"));
+      Serial.println("#device must restart timeout from request firmware dowload "+String(attr.timeout_req_download_fw/60000)+" minute");
       delay(5000);
       ESP.restart();
     }

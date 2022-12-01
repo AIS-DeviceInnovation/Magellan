@@ -26,7 +26,6 @@ support esp32, esp8266
 Author:(POC Device Magellan team)      
 Create Date: 25 April 2022. 
 Modified: 1 september 2022.
-Released for private usage.
 */
 
 #include "MAGELLAN_MQTT.h"

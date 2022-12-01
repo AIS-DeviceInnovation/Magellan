@@ -183,7 +183,7 @@ boolean manageConfigOTAFile::saveSuccessOrFail(String stateOTA)
 {
     JsonObject bufferProfile = readObjectConfigFileOTA();
 
-    StaticJsonDocument<256> docsBuffer = bufferProfile;
+    StaticJsonDocument<512> docsBuffer = bufferProfile;
     bufferProfile.remove("Code");
     docsBuffer["status"] = stateOTA.c_str();
     String ProfileUpdate;

@@ -26,7 +26,6 @@ support esp8266, esp32
 Author:(POC Device Magellan team)      
 Create Date: 25 April 2022. 
 Modified: 21 september 2022.
-Released for private usage.
 */
 #ifndef MAGELLAN_MQTT_DEVICE_CORE_h
 #define MAGELLAN_MQTT_DEVICE_CORE_h
@@ -45,8 +44,8 @@ Released for private usage.
 #define _default_OverBufferSize defaultOTABuffer
 #endif
 #include "Attribute_MQTT_core.h"
-//version dev v1.0.0
-#define lib_version "v1.0.0"
+//version dev v1.1.1
+#define lib_version "v1.0.1"
 //Response Payload format some function can be set.
 #define PLAINTEXT 0 //Plaintext
 #define JSON 1 //Json
