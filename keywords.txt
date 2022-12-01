@@ -11,7 +11,7 @@ MAGELLAN_MQTT KEYWORD1
 #######################################
 
 
-MAGELLAN_SIM7600E_MQTT KEYWORD2
+MAGELLAN_MQTT KEYWORD2
 setting KEYWORD2
 setting.ThingIdentifier KEYWORD2
 setting.ThingSecret KEYWORD2
@@ -82,9 +82,6 @@ control KEYWORD2
 control.request KEYWORD2
 control.ACK KEYWORD2
 report.send KEYWORD2
-builtInSensor KEYWORD2
-builtInSensor.readTemperature KEYWORD2
-builtInSensor.readHumidity KEYWORD2
 OTA KEYWORD2
 OTA.checkUpdate KEYWORD2
 OTA.executeUpdate KEYWORD2
