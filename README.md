@@ -19,7 +19,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
    * [เพิ่ม Device เข้าโปรเจค และตั้งค่า Heartbeat](#เพิ่ม-device-เข้าโปรเจค-และตั้งค่า-heartbeat)
    * [แก้ไขโค้ดโปรแกรมให้เชื่อมต่อ](#แก้ไขโค้ดโปรแกรม)
    * [ตรวจสอบผลการทำงานบน Magellan Platform](#ตรวจสอบผลการทำงานบน-magellan-platform)
- * [คำสั่งที่มีให้ใช้งาน](คำสั่งที่มีให้ใช้งาน)
+ * [คำสั่งที่มีให้ใช้งาน](#คำสั่งที่มีให้ใช้งาน)
    * [MAGELLAN_MQTT.h](#include-magellan_mqtth)
    * [MAGELLAN_WiFi_SETTING.h](#include-magellan_wifi_settingh)
  * [ศึกษาเพิ่มเติม](#ศึกษาเพิ่มเติม)
