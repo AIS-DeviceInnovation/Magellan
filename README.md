@@ -87,10 +87,10 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
 
  * `MAGELLAN_MQTT  magel;` เริ่มต้นใช้งานไลบรารี Magellan Platform สร้างออปเจค magel
  * `Setting (Global Variables)`
-   * `magel.setting.ThingIdentifier` ใช้เป็นตัวแปรสำหรับกำหนดค่า ThingIdentifier 
-   * `magel.setting.ThingSecret` ใช้เป็นตัวแปรสำหรับกำหนดค่า ThingSecret 
-   * `magel.setting.endpoint` ใช้เป็นตัวแปรสำหรับกำหนดค่า IP หรือ URL Path ปลายทางที่ต้องการให้อุปกรณ์เชื่อมต่อ
-   * `magel.setting.clientBufferSize` ใช้เป็นตัวแปรสำหรับกำหนดค่า clientBufferSize ของอุปกรณ์ โดยสามารถกำหนดขนาดตามที่ต้องการหรือใช้ค่าตัวแปร Default ที่กำหนดให้ โดยมีดังนี้
+   * `setting.ThingIdentifier` ใช้เป็นตัวแปรสำหรับกำหนดค่า ThingIdentifier 
+   * `setting.ThingSecret` ใช้เป็นตัวแปรสำหรับกำหนดค่า ThingSecret 
+   * `setting.endpoint` ใช้เป็นตัวแปรสำหรับกำหนดค่า IP หรือ URL Path ปลายทางที่ต้องการให้อุปกรณ์เชื่อมต่อ
+   * `setting.clientBufferSize` ใช้เป็นตัวแปรสำหรับกำหนดค่า clientBufferSize ของอุปกรณ์ โดยสามารถกำหนดขนาดตามที่ต้องการหรือใช้ค่าตัวแปร Default ที่กำหนดให้ โดยมีดังนี้
 
     [  ตารางแสดงค่าตัวแปร Default Setting clientBufferSize ]
     | ตัวแปร | Default value (ESP32) | Default value (ESP8266) | การเรียกใช้ตัวแปร |
