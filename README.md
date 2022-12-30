@@ -27,7 +27,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
 
 ## Magellan Platform Features
 
- * Device Management - การจัดการเกี่ยวกับอุปกรณ์ IoT การตั้งค่าต่างๆ ของอุปกรณ์ การรับส่งข้อมูลผ่านโปรโตคอลที่รองรับได้แก่ CoAP , MQTT และ HTTP การจัดการเกี่ยวกับ Data Storage ที่มีการทำ Message cache, Data history และ Compare data รวมไปถึงการสั่งงานควบคุมอุปกรณ์ให้เปิด-ปิด ได้ด้วยตัวคุณเอง ทั้งแบบ API และผ่านหน้าเว็บของแพลตฟอร์ม
+ * Device Management - การจัดการเกี่ยวกับอุปกรณ์ IoT การตั้งค่าต่างๆ ของอุปกรณ์ การรับส่งข้อมูลผ่านโปรโตคอลที่รองรับได้แก่ CoAP, MQTT และ HTTP การจัดการเกี่ยวกับ Data Storage ที่มีการทำ Message cache, Data history และ Compare data รวมไปถึงการสั่งงานควบคุมอุปกรณ์ให้เปิด-ปิด ได้ด้วยตัวคุณเอง ทั้งแบบ API และผ่านหน้าเว็บของแพลตฟอร์ม
  * Plug & Play เรามีการจัดการการเชื่อมต่อระหว่างอุปกรณ์ AIS NB-IoT กับแพลตฟอร์มไว้แล้ว เพียงแค่ติดตั้ง SDK ที่ทางเรามีพร้อมให้ใช้งาน ก็จะสามารถเริ่มใช้งานได้ ทั้งการ รับ-ส่ง ข้อมูลระหว่างอุปกรณ์ การตั้งค่าเพื่อการควบคุมและใช้งาน
  * Data Visualization เรามีการนำข้อมูลที่ได้จากอุปกรณ์มาแสดงผลทั้งแบบกราฟ location map และอีกหลายอย่าง โดยเป็น widget หลากหลายแบบให้คุณสามารถเลือกออกแบบหน้าจอของการแสดงผลของคุณเองได้ รวมทั้งควบคุมอุปกรณ์ของคุณผ่านทางเว็บได้อย่างง่ายดาย
  * Teams Collaboration เป็นฟังก์ชันสำหรับรองรับการทำงานเป็นทีม คุณสามารถ แชร์โปรเจกต์หรือDashboard ของคุณที่สร้างในแพลตฟอร์มไปให้เพื่อนร่วมทีมของคุณได้ เพื่อให้ทุกคนเข้ามามีส่วนรวมในการทำงานร่วมกันได้อย่างง่ายดาย
@@ -41,7 +41,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
  * เปิดโปรแกรม Arduino IDE ขึ้นมา แล้วติดตั้งแพ็กเกจบอร์ดเพิ่ม 
  * ติดตั้งไลบรารี่ `Magellan` ผ่าน Library Manager (อ่านเพิ่มเติม [Installing Additional Arduino Libraries](https://www.arduino.cc/en/Guide/Libraries))
  * หากเป็น ESP32 ให้เลือกบอร์ดเป็น ESP32 Dev Module หรือเป็น ESP8266 ให้เลือกบอร์ดเป็น Generic ESP8266 Module แล้วเลือกพอร์ตเป็น COM port ที่ใช้
- * เปิดโปรแกรมตัวอย่าง [credential](examples/example_MQTT/credential/credential.ino) โดยใช้คำสั่ง getThingIdentifier() และ magel.credential.getThingSecret() เพื่อทดสอบอ่านหมายเลข ThingIdentifier และ ThingSecret ของโมดูล
+ * เปิดโปรแกรมตัวอย่าง [credential](examples/example_MQTT/credential/credential.ino) โดยใช้คำสั่ง magel.credential.getThingIdentifier() และ magel.credential.getThingSecret() เพื่อทดสอบอ่านหมายเลข ThingIdentifier และ ThingSecret ของโมดูล
 
 
 ## การส่งข้อมูลขึ้น Magellan Platform
@@ -118,7 +118,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
    * `magel.Info.getThingToken()` ใช้อ่าน Thing Token
    * `magel.Info.getHostName()` ใช้อ่าน Host Name บนอุปกรณ์ที่ทำการเชื่อมต่ออยู่
  * `Subscribes` 
-   * `magel.subscribes.([](){ Function Register Subscribe Here })` ใช้ Subscribe Topic หรือ Subscribe Function ที่อยู่ภายใน Function subscribes ให้อัตโนมัติเมื่ออุปกรณ์สามารถเชื่อมต่อ Magellan Platform ได้
+   * `magel.subscribes([](){ Function Register Subscribe Here })` ใช้ Subscribe Topic หรือ Subscribe Function ที่อยู่ภายใน Function subscribes ให้อัตโนมัติเมื่ออุปกรณ์สามารถเชื่อมต่อ Magellan Platform ได้
  * `Interval` 
    * `magel.interval(unsigned int second, []() { function here })` ใช้กำหนดช่วงเวลาให้ Function ที่ประกาศภายใน Interval ทำงานในแต่ละรอบโดยมีหน่วยเป็น Second
  * `isConnected` 
@@ -128,8 +128,8 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
  * `Sensor` 
    * `magel.sensor.add(sensorKey, sensorValue)` ใช้เพิ่มข้อมูลเซนเซอร์ โดยเก็บไว้ที่ JSONBuffer ของ Sensor
    * `magel.sensor.update(sensorKey, sensorValue)` ใช้แก้ไขข้อมูลเซนเซอร์ตาม sensorKey และ sensorValue ที่กำหนด
-   * `magel.sensor.location.add(locationKey, latitude , longtitude)` ใช้เพิ่มข้อมูลเซนเซอร์ประเภท Location ซึ่งต้องกำหนด locationKey,latitude และ longtitude 
-   * `magel.sensor.location.update(locationKey, latitude , longtitude)` ใช้แก้ไขข้อมูลเซนเซอร์ประเภท Location ตาม locationKey,latitude และ longtitude ที่กำหนด
+   * `magel.sensor.location.add(locationKey, latitude, longtitude)` ใช้เพิ่มข้อมูลเซนเซอร์ประเภท Location ซึ่งต้องกำหนด locationKey และ longtitude 
+   * `magel.sensor.location.update(locationKey, latitude, longtitude)` ใช้แก้ไขข้อมูลเซนเซอร์ประเภท Location ตาม locationKey และ longtitude ที่กำหนด
    * `magel.sensor.findKey(sensorKey)` ใช้ค้นหา sensorKey ใน JSONBuffer ที่เคยเพิ่มเข้าไป ต้องทำการกำหนด sensorKey ที่ต้องการค้นหา
    * `magel.sensor.remove(sensorKey)` ใช้ลบข้อมูลของเซนเซอร์ออกจาก JSONBuffer ด้วย sensorKey 
    * `magel.sensor.toJSONString()` ใช้แปลงรูปแบบข้อมูล JSON ไปเป็นรูปแบบ JSONString จากข้อมูลเซนเซอร์ที่เก็บไว้ใน JSONBuffer
