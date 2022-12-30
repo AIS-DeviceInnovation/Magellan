@@ -102,8 +102,8 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
    * `magel.begin()` เริ่มต้นใช้งาน และตั้งค่าการเชื่อมต่อ Magellan Platform
    * `magel.begin(setting)` เริ่มต้นใช้งาน  และตั้งค่าการเชื่อมต่อ Magellan Platform ตามที่กำหนดใน Setting (Global Variables)
  * `Credential`
-   * `magel.credential.getThingIdentifier()` อ่านค่า Thing Identifier ของโมดูล
-   * `magel.credential.getThingSecret()` อ่านค่า Thing Secret ของโมดูล
+   * `magel.credential.getThingIdentifier()` อ่านค่า Thing Identifier จาก file system ของบอร์ด ESP32
+   * `magel.credential.getThingSecret()` อ่านค่า Thing Secret จาก file system ของบอร์ด ESP32
    * `magel.credential.setManual(String newThingIdentifier, String newThingSecret)` กำหนดค่า ThingIdentifier และ ThingSecret ของ Device ตามที่ผู้ใช้งานต้องการ
    * `magel.credential.regenerate()` ใช้ในการล้างค่า ThingIdentifier และ ThingSecret ของ Device ที่ถูกกำหนดไว้และให้ library ทำการกำหนดค่าขึ้นมาใหม่ให้
    * `magel.credential.getPreviousThingIdentifier()` อ่านค่า ThingIdentifier ของ Device ที่เคยกำหนดไว้ก่อนทำการล้างค่าไป
@@ -112,7 +112,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
  * `Loop` 
    * `magel.loop()` ใช้ทำให้คำสั่งต่าง ๆ สามารถทำงานได้อย่างต่อเนื่องในระหว่างการเชื่อมต่อกับ Magellan Platform จำเป็นต้องถูกเรียกใช้
  * `Info` 
-   * `magel.Info.getBoardInfo()` ใช้อ่านหมายเลข Thing Identifier, Thing Secret ของโมดูลที่ Library ได้ทำการ Generate Thing Key ให้
+   * `magel.Info.getBoardInfo()` ใช้อ่านหมายเลข Thing Identifier, Thing Secret จาก file system ของบอร์ด ESP32 Library ได้ทำการ Generate Thing Key ให้
    * `magel.Info.getThingIdentifier()` ใช้อ่านหมายเลข Thing Identifier
    * `magel.Info.getThingSecret()` ใช้อ่านหมายเลข Thing Secret
    * `magel.Info.getThingToken()` ใช้อ่าน Thing Token
@@ -224,7 +224,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
    * `magel.OTA.executeUpdate()` ใช้สำหรับเรียกใช้งานการทำ OTA แบบ Manual
    * `magel.OTA.getAutoUpdate()` ใช้สำหรับอ่านสถานะการตั้งค่าในการทำ OTA
    * `magel.OTA.checkUpdate()` ใช้สำหรับตรวจสอบข้อมูลการ OTA จาก Magellan Platform กับ Firmware ปัจจุบันของอุปกรณ์
-   * `magel.OTA.magel.OTA.readDeviceInfo()` ใช้สำหรับอ่านข้อมูล Firmware ปัจจุบันของอุปกรณ์
+   * `magel.OTA.readDeviceInfo()` ใช้สำหรับอ่านข้อมูล Firmware ปัจจุบันของอุปกรณ์
 
 ### `#include <MAGELLAN_WiFi_SETTING.h>`
 
@@ -238,7 +238,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
    * `connectWiFi("set_your_ssid", "set_your_password")` ใช้ในการเชื่อมต่อ WiFi ตามที่ต้องการ
    * `getSSID()` ใช้ในการอ่านค่า SSID ของ WiFi ที่ทำการเชื่อมต่ออยู่
  * `reconnectWiFi` 
-   * `reconnectWiFi(magel)` ใช้ในการเชื่อมต่อกับ Magellan Platform เมื่อมีสถานะไม่การเชื่อมต่อกับ Magellan Platform
+   * `reconnectWiFi(magel)` ใช้ในการเชื่อมต่อกับ Magellan Platform เมื่อมีสถานะไม่มีการเชื่อมต่อกับ Magellan Platform
 
 
 
@@ -256,23 +256,23 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
      * [credential](examples/example_MQTT/credential/credential.ino) - ตัวอย่างการอ่านค่า Credential และการกำหนด Credential
    * `getServerConfig`
      * [getServerConfigJSON](examples/example_MQTT/getServerConfig/getServerConfigJSON/getServerConfigJSON.ino) - ตัวอย่างการแสดงค่าที่อุปกรณ์ไปเรียกค่าที่เราทำการ Config ไว้บน Magellan Platform ในรูปแบบ JSON 
-     * [getServerConfigPlaintext](examples/example_MQTT/getServerConfig/getServerConfigPlaintext/getServerConfigPlaintext.ino) - ตัวอย่างการแสดงค่าที่อุปกรณ์ไปเรียกค่าที่เราทำการ Config ไว้บน Magellan Platform ในรูปแบบ Plain Text 
+     * [getServerConfigPlaintext](examples/example_MQTT/getServerConfig/getServerConfigPlaintext/getServerConfigPlaintext.ino) - ตัวอย่างการแสดงค่าที่อุปกรณ์ไปเรียกค่าที่เราทำการ Config ไว้บน Magellan Platform ในรูปแบบ Plaintext 
    * `getControl`
      * [getControlJSON](examples/example_MQTT/getControl/getControlJSON/getControlJSON.ino) - ตัวอย่างการแสดงค่าที่ตัวอุปกรณ์ทำการ Control บน Dashboard ของ Magellan Platform ในรูปแบบ JSON 
-     * [getControlPlaintext](examples/example_MQTT/getControl/getControlPlaintext/getControlPlaintext.ino) - ตัวอย่างการแสดงค่าที่ตัวอุปกรณ์ทำการ Control บน Dashboard ของ Magellan Platform ในรูปแบบ Plain Text 
+     * [getControlPlaintext](examples/example_MQTT/getControl/getControlPlaintext/getControlPlaintext.ino) - ตัวอย่างการแสดงค่าที่ตัวอุปกรณ์ทำการ Control บน Dashboard ของ Magellan Platform ในรูปแบบ Plaintext 
    * `getControlLED`
      * [getControlJSON_LED](examples/example_MQTT/getControlLED/getControlJSON_LED/getControlJSON_LED.ino) - ตัวอย่างการแสดงค่าที่ตัวอุปกรณ์ทำการ Control LED บน Dashboard ของ Magellan Platform ในรูปแบบ JSON 
-     * [getControlPlaintext_LED](examples/example_MQTT/getControlLED/getControlPlaintext_LED/getControlPlaintext_LED.ino) - ตัวอย่างแสดงค่าที่ตัวอุปกรณ์ทำการ Control LED บน Dashboard ของ Magellan Platform ในรูปแบบ Plain Text 
+     * [getControlPlaintext_LED](examples/example_MQTT/getControlLED/getControlPlaintext_LED/getControlPlaintext_LED.ino) - ตัวอย่างแสดงค่าที่ตัวอุปกรณ์ทำการ Control LED บน Dashboard ของ Magellan Platform ในรูปแบบ Plaintext 
    * `heartbeat`
      * [heartbeat](examples/example_MQTT/heartbeat/heartbeat.ino) - ตัวอย่างการส่งสัญญาณไปยัง Server รูปแบบ Heartbeat เพื่อบอกให้ Magellan Platform ทราบว่าอุปกรณ์ดังกล่าว มีการเชื่อมต่ออยู่
    * `reportData`
      * [reportDataJSON](examples/example_MQTT/reportData/reportDataJSON/reportDataJSON.ino) - ตัวอย่างการส่งค่าตัวเลขแบบสุ่มขึ้นไปยัง Magellan Platform ในรูปแบบ JSON 
-     * [reportDataPlaintext](examples/example_MQTT/reportData/reportDataPlaintext/reportDataPlaintext.ino) - ตัวอย่างการส่งค่าตัวเลขแบบสุ่มขึ้นไปยัง Magellan Platform ในรูปแบบ Plain Text 
+     * [reportDataPlaintext](examples/example_MQTT/reportData/reportDataPlaintext/reportDataPlaintext.ino) - ตัวอย่างการส่งค่าตัวเลขแบบสุ่มขึ้นไปยัง Magellan Platform ในรูปแบบ Plaintext 
    * `reportMultiDataType`
      * [reportMultiDataType](examples/example_MQTT/reportMultiDataType/reportMultiDataType.ino) - ตัวอย่างการส่งข้อมูลในรูปแบบหลายประเภท ได้แก่ เลขจำนวนเต็มบวก, เลขจำนวนเต็มลบ, ทศนิยม, ข้อความ, พิกัด GPS และ Boolean Magellan Platform 
    * `reportSensor`
      * [reportSensorJSON](examples/example_MQTT/reportSensor/reportSensorJSON/reportSensorJSON.ino) - ตัวอย่างการส่งข้อมูลจากเซนเซอร์บนอุปกรณ์ไปบน Magellan Platform ในรูปแบบ JSON 
-     * [reportSensorPlaintext](examples/example_MQTT/reportSensor/reportSensorPlaintext/reportSensorPlaintext.ino) - ตัวอย่างการส่งข้อมูลจากเซนเซอร์บนอุปกรณ์ไปบน Magellan Platform ในรูปแบบ Plain Text 
+     * [reportSensorPlaintext](examples/example_MQTT/reportSensor/reportSensorPlaintext/reportSensorPlaintext.ino) - ตัวอย่างการส่งข้อมูลจากเซนเซอร์บนอุปกรณ์ไปบน Magellan Platform ในรูปแบบ Plaintext 
    * `reportWithTimestamp`
      * [reportWithTimestamp](examples/example_MQTT/reportWithTimestamp/reportWithTimestamp.ino) - ตัวอย่างการส่งข้อมูลจากเซนเซอร์พร้อม Timestamp บนอุปกรณไปบน Magellan Platform 
    * `saveClientConfig`
