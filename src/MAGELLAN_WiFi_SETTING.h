@@ -67,7 +67,7 @@ void connectWiFi(WIFI_SETTING &sWiFi_setting)
 
 String getSSID()
 {
-  return WiFi.SSID();
+  return WiFiSetting.SSID;
 }
 
 void connectWiFi(String SSID, String PASS) 
