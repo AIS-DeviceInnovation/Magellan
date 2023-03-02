@@ -22,6 +22,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
  * [คำสั่งที่มีให้ใช้งาน](#คำสั่งที่มีให้ใช้งาน)
    * [MAGELLAN_MQTT.h](#include-magellan_mqtth)
    * [MAGELLAN_WiFi_SETTING.h](#include-magellan_wifi_settingh)
+   * [MAGELLAN_MEDIA_FILE.h](#include-magellan_media_fileh)
  * [ศึกษาเพิ่มเติม](#ศึกษาเพิ่มเติม)
    * [ตัวอย่างโค้ดโปรแกรม](#ตัวอย่างโค้ดโปรแกรม)
 
@@ -240,6 +241,22 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
  * `reconnectWiFi` 
    * `reconnectWiFi(magel)` ใช้ในการเชื่อมต่อกับ Magellan Platform เมื่อมีสถานะไม่มีการเชื่อมต่อกับ Magellan Platform
 
+### `#include <MAGELLAN_MEDIA_FILE.h>`
+
+ใช้สำหรับการส่งข้อมูลในรูปแบบของ Media File ไปยัง Magellan Platform
+
+ * `UploadMediaFile`
+   * `media.uploadFromSPIFFS(String key, const char *filePath, Enum mediatype, String subtype)` ใช้ส่งข้อมูลของ Media File จาก File System (FS or SPIFFS) ไปยัง Magellan Platform
+   * `media.uploadFromSDCard(String key, const char *filePath, Enum mediatype, String subtype, SD)` ใช้ส่งข้อมูลของ Media File จาก SD Card ไปยัง Magellan Platform
+   * `media.uploadFromBinary(String key, const uint8_t* binaryData, size_t sizeBinaryData, Enum mediatype, String subtype)` ใช้ส่งข้อมูลของ Media File จากรูปแบบ Binary ไปยัง Magellan Platform
+
+ * `ToBase64String`
+   * `media.toBase64String(const char *filePath)` ใช้แปลงค่าของ Media File ใน File System (FS or SPIFFS) เป็น String ในรูปแบบ Base64
+   * `media.toBase64String(const char *filePath, fs::FS &SD)` ใช้แปลงค่าของ Media File ใน SD Card เป็น String ในรูปแบบ Base64
+   * `media.toBase64String(uint8_t *binaryData, size_t sizeBinaryData)` ใช้แปลงค่าของ Media File จากรูปแบบ Binary เป็น String ในรูปแบบ Base64
+   * `media.toBase64MimeTypeString(const char *filePath, mediaTypeEnum mediatype, const String& subtype` ใช้แปลงค่าของ Media File ใน File System (FS or SPIFFS) เป็น String พร้อมกับ prefix ของ Media Type สำหรับใช้ร่วมกับ Base64
+   * `media.toBase64MimeTypeString(const char *filePath, mediaTypeEnum mediatype, const String& subtype, fs::FS &SD)` ใช้แปลงค่าของ Media File ใน SD Card เป็น String พร้อมกับ prefix ของ Media Type สำหรับใช้ร่วมกับ Base64
+   * `media.toBase64MimeTypeString(uint8_t *binaryData, size_t sizeBinaryData, mediaTypeEnum mediatype, const String& subtype)` ใช้แปลงค่าของ Media File จากรูปแบบ Binary เป็น String พร้อมกับ prefix ของ Media Type สำหรับใช้ร่วมกับ Base64
 
 
 ## ศึกษาเพิ่มเติม
@@ -285,7 +302,10 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
      * [autoUpdate](examples/example_MQTT/OTA/autoUpdate/autoUpdate.ino) - ตัวอย่างการกำหนดให้อุปกรณ์ทำการอัพเดท Firmware อัตโนมัติ
      * [manualUpdate](examples/example_MQTT/OTA/manualUpdate/manualUpdate.ino) - ตัวอย่างการกำหนดให้อุปกรณ์ทำการอัพเดท Firmware ตามที่ผู้ใช้งานกำหนดเอง
      * [utilityInformation](examples/example_MQTT/OTA/utilityInformation/utilityInformation.ino) - ตัวอย่างการอ่านค่าข้อมูลการ OTA
-
-
-
-
+   * `UploadMediaFile`
+     * [uploadMediaFileBinary](examples\example_MQTT\uploadMediaFile\uploadMediaFileBinary\uploadMediaFileBinary.ino) - ตัวอย่างการส่งข้อมูลของ Media File จาก File System (FS or SPIFFS) ไปยัง Magellan Platform
+     * [uploadMediaFileSDCard](examples\example_MQTT\uploadMediaFile\uploadMediaFileBinary\uploadMediaFileSDCard.ino) - ตัวอย่างการส่งข้อมูลของ Media File จาก SD Card ไปยัง Magellan Platform
+     * [uploadMediaFileSPIFFS](examples\example_MQTT\uploadMediaFile\uploadMediaFileBinary\uploadMediaFileSPIFFS.ino) - ตัวอย่างกาส่งข้อมูลของ Media File จาก File System (FS or SPIFFS) ไปยัง Magellan
+   * `ToBase64String`
+     * [toBase64String](examples\example_MQTT\uploadMediaFile\convertToBase64\toBase64String\toBase64String.ino) - ตัวอย่างการแปลงค่าของ Media File ใน [1.]Binary format (FS or SPIFFS), [2.]File System และ [3.]SD Card เป็น String ในรูปแบบ Base64
+     * [toBase64MimeTypeString](examples\example_MQTT\uploadMediaFile\convertToBase64\toBase64MimeTypeString\toBase64MimeTypeString.ino) - ตัวอย่างการแปลงค่าของ Media File ใน [1.]Binary format (FS or SPIFFS), [2.]File System และ [3.]SD Card เป็น String พร้อมกับ prefix ของ Media Type สำหรับใช้ร่วมกับ Base64
