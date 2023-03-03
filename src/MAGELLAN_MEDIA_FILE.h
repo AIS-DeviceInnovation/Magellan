@@ -14,17 +14,6 @@ extern "C"
 #define memory LittleFS
 #endif
 
-// #define Application "application"
-// #define Audio "audio"
-// #define Font "font"
-// #define Example "example"
-// #define Image "image"
-// #define Message "message"
-// #define Model "model"
-// #define Multipart "multipart"
-// #define Text "text"
-// #define Video "video"
-
 //Client Internet interface connection
 #define useGSMClient  0
 #define useExternalClient 1
