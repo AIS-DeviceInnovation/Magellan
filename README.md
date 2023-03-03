@@ -304,8 +304,8 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
      * [utilityInformation](examples/example_MQTT/OTA/utilityInformation/utilityInformation.ino) - ตัวอย่างการอ่านค่าข้อมูลการ OTA
    * `UploadMediaFile`
      * [uploadMediaFileBinary](examples/example_MQTT/uploadMediaFile/uploadMediaFileBinary/uploadMediaFileBinary.ino) - ตัวอย่างการส่งข้อมูลของ Media File จาก File System (FS or SPIFFS) ไปยัง Magellan Platform
-     * [uploadMediaFileSDCard](examples/example_MQTT/uploadMediaFile/uploadMediaFileBinary/uploadMediaFileSDCard.ino) - ตัวอย่างการส่งข้อมูลของ Media File จาก SD Card ไปยัง Magellan Platform
-     * [uploadMediaFileSPIFFS](examples/example_MQTT/uploadMediaFile/uploadMediaFileBinary/uploadMediaFileSPIFFS.ino) - ตัวอย่างกาส่งข้อมูลของ Media File จาก File System (FS or SPIFFS) ไปยัง Magellan
+     * [uploadMediaFileSDCard](examples/example_MQTT/uploadMediaFile/uploadMediaFileSDCard/uploadMediaFileSDCard.ino) - ตัวอย่างการส่งข้อมูลของ Media File จาก SD Card ไปยัง Magellan Platform
+     * [uploadMediaFileSPIFFS](examples/example_MQTT/uploadMediaFile/uploadMediaFileSPIFFS/uploadMediaFileSPIFFS.ino) - ตัวอย่างกาส่งข้อมูลของ Media File จาก File System (FS or SPIFFS) ไปยัง Magellan
    * `ToBase64String`
      * [toBase64String](examples/example_MQTT/uploadMediaFile/convertToBase64/toBase64String/toBase64String.ino) - ตัวอย่างการแปลงค่าของ Media File ใน [1.]Binary format (FS or SPIFFS), [2.]File System และ [3.]SD Card เป็น String ในรูปแบบ Base64
      * [toBase64MimeTypeString](examples/example_MQTT/uploadMediaFile/convertToBase64/toBase64MimeTypeString/toBase64MimeTypeString.ino) - ตัวอย่างการแปลงค่าของ Media File ใน [1.]Binary format (FS or SPIFFS), [2.]File System และ [3.]SD Card เป็น String พร้อมกับ prefix ของ Media Type สำหรับใช้ร่วมกับ Base64
