@@ -39,7 +39,7 @@ public:
     String readSpacificPreviousCredentialFile(String readKey);
     // boolean saveCredential(JsonObject credentialObj);
     void setActivateCredential(boolean activate);
-    boolean credentialIsActivated();
+    // boolean credentialIsActivated();
 };
 extern manageCredentialFile credentialFile;
 #endif

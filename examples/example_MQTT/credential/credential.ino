@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <MAGELLAN_MQTT.h>
-#include <MAGELLAN_WiFi_SETTING.h> //optional you can using wifi connect with your own functionn
+#include <MAGELLAN_WiFi_SETTING.h> //optional you can using wifi connect with your own function
 #define REGEN_BY_CONDITION false
 WiFiClient WiFi_client;
 MAGELLAN_MQTT magel(WiFi_client);

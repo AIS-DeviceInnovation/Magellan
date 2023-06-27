@@ -24,8 +24,6 @@ void FileSystem::begin()
       }
 
    #elif defined ESP8266
-      // SPIFFS = LittleFS;
-      // if(myFS.begin())
       if(myFS.begin())
       {
          DEBUG_SERIAL.println("- Mounted FileSystem");
@@ -68,11 +66,6 @@ ListFileString FileSystem::listDirectory(const char* dir_name, uint8_t level, fs
          DEBUG_SERIAL.println(file.name());
          list.push_back(file.name());
          if(level){
-            // #ifdef ESP32
-            //    listDirectory(file.name(), level -1, SPIFFS);
-            // #elif defined ESP8266
-            //    listDirectory(file.name(), level -1, LittleFS);
-            // #endif
             listDirectory(file.name(), level -1);
          }
       }
@@ -113,82 +106,6 @@ ListFileString FileSystem::listFile(const char* dir_name, fs::FS &fs)
    }
    return list;
 }
-// String FileSystem::readFile(const char* path, fs::FS &fs)
-// {
-//     Serial.printf("Reading file: %s\r\n", path);
-//     char *buffer;
-//     char *bb;
-//     File file = fs.open(path);
-//     if(!file || file.isDirectory())
-//     {
-//         Serial.println(F("- faild to open file for reading"));
-//         return "null";
-//     }
-    
-//     Serial.println(F("- read from file:"));
-//     while(file.available())
-//     {
-//       buffer = new char[file.size()+2];
-//       int l = file.readBytesUntil('\n', buffer, file.size()+2);
-//       buffer[l] = 0;
-//       strcpy(bb, buffer);
-//     }
-//     file.close();
-//     return String(*bb);
-// }
-
-// String FileSystem::readBigFile(const char* path, fs::FS &fs)
-// {
-//   DEBUG_SERIAL.printf("Reading file: %s\r\n", path);
-//   String _read_buffer;
-//    #ifdef ESP32
-//       File file = fs.open(path);
-//    #elif defined ESP8266
-//       File file = fs.open(path, "r");
-//    #endif
-//   if(!file || file.isDirectory())
-//   {
-//       DEBUG_SERIAL.println(F("- faild to open file for reading"));
-//       return "null";
-//   }
-  
-//   DEBUG_SERIAL.println("- read from file size:"+String(file.size()));
-//   while(file.available())
-//   {
-//     char buff[65000];
-//     int l = file.readBytesUntil('\n', buff, sizeof(buff));
-//     buff[l] = 0;
-//     _read_buffer.concat(buff);
-
-//   }
-//   return _read_buffer;
-// }
-
-// ListFileString FileSystem::readLargeFile(const char* path, fs::FS &fs)
-// {
-//   ListFileString list;
-//   DEBUG_SERIAL.printf("Reading file: %s\r\n", path);
-//   char* buffer;
-//   String _read_buffer;
-//    #ifdef ESP32
-//       File file = fs.open(path);
-//    #elif defined ESP8266
-//       File file = fs.open(path, "r");
-//    #endif
-//   if(!file || file.isDirectory())
-//   {
-//       DEBUG_SERIAL.println(F("- faild to open file for reading"));
-//       return list;
-//   }
-  
-//   DEBUG_SERIAL.println("- read from file size:"+String(file.size()));
-//   while(file.available())
-//   {
-//     list.push_back(file.readStringUntil('\n').c_str());
-//   }
-//   file.close();
-//   return list;
-// }
 
 String FileSystem::readFile(const char* path, fs::FS &fs)
 {

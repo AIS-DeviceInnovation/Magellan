@@ -2,7 +2,7 @@
 library version: v2.5.3
 Author:Worawit Sayned (POC Device Magellan team)      
 Create Date: 25 April 2022. 
-Modified: 1 september 2022.
+Modified: 3 may 2023.
 Released for private usage.
 */
 #ifndef ATTRIBUTE_CORE_H
@@ -23,13 +23,14 @@ Released for private usage.
   #include "FS.h"
 #endif
 
-
+#define _major_ver 1
+#define _feature_ver 1
+#define _enhance_ver 0
+#define lib_ver "v"+String(_major_ver) +"."+ String(_feature_ver)+"."+String(_enhance_ver)
 class Attribute_MQTT_core
 {
 public:
     static String statusActivateCode;
-    static String secretCode;
-    static boolean gotSecretCode;
     static boolean isBypassAutoUpdate;
     static boolean usingCheckUpdate;
     static boolean checkFirmwareUptodate;
@@ -76,6 +77,19 @@ public:
     static StaticJsonDocument<512> docClientConf;
     static DynamicJsonDocument *adjDoc;
     static DynamicJsonDocument *docSensor;
+    //1.1.0
+    static boolean checkUpdate_inside;
+    static unsigned int delayCheckUpdate_inside;
+    static unsigned int delayRequest_download;
+    static size_t buffer_JSON_bufferSize;
+    static size_t max_payload_report;
+    static int matchMsgId_cb;
+    static int matchMsgId_send;
+    static int maxRetransmit;
+    static unsigned int durationRetransmit;
+    // @attention 0 = not register cb, 1 register json, 2 register plaintext, 3 register both
+    static boolean isMatchMsgId;
+    static boolean reqRetransmit;
 };
 extern Attribute_MQTT_core attr;
 #endif

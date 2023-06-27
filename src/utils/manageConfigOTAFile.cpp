@@ -8,21 +8,11 @@ void manageConfigOTAFile::beginFileSystem()
 
 boolean manageConfigOTAFile::checkFileOTA()
 {
-    // #ifdef ESP32
-    //     return fileSys.isFileExist(configOTAFilePath, SPIFFS);
-    // #elif defined ESP8266
-    //     return fileSys.isFileExist(configOTAFilePath, LittleFS);
-    // #endif
     return fileSys.isFileExist(configOTAFilePath);
 }
 
 boolean manageConfigOTAFile::checkLastedOTA()
 {
-    // #ifdef ESP32
-    //     return fileSys.isFileExist(lastedOTAPath, SPIFFS);
-    // #elif defined ESP8266
-    //     return fileSys.isFileExist(lastedOTAPath, LittleFS);
-    // #endif
     return fileSys.isFileExist(lastedOTAPath);
 }
 
@@ -30,42 +20,24 @@ boolean manageConfigOTAFile::checkLastedOTA()
 boolean manageConfigOTAFile::createConfigFileOTA()
 {
     String init_config = "{\"namefirmware\":\"null\",\"sizefirmware\":\"0\",\"versionfirmware\":\"null\",\"checksumAlgorithm\":\"null\",\"checksum\":\"null\",\"status\":\"null\"}";
-    // #ifdef ESP32
-    //     return fileSys.writeFile(configOTAFilePath, init_config.c_str(), SPIFFS);
-    // #elif defined ESP8266
-    //     return fileSys.writeFile(configOTAFilePath, init_config.c_str(), LittleFS);
-    // #endif
     return fileSys.writeFile(configOTAFilePath, init_config.c_str());
 }
 
 boolean manageConfigOTAFile::createLastedOTA()
 {
     String init_config = "{\"namefirmware\":\"null\",\"sizefirmware\":\"0\",\"versionfirmware\":\"null\",\"checksumAlgorithm\":\"null\",\"checksum\":\"null\"}";
-    // #ifdef ESP32
-    //     return fileSys.writeFile(lastedOTAPath, init_config.c_str(), SPIFFS);
-    // #elif defined ESP8266l
-    //     return fileSys.writeFile(lastedOTAPath, init_config.c_str(), LittleFS);
-    // #endif
+
     return fileSys.writeFile(lastedOTAPath, init_config.c_str());
 }
 
 String manageConfigOTAFile::readConfigFileOTA()
 {
-    // #ifdef ESP32
-    //     return fileSys.readFile(configOTAFilePath, SPIFFS);
-    // #elif defined ESP8266
-    //     return fileSys.readFile(configOTAFilePath, LittleFS);
-    // #endif
     return fileSys.readFile(configOTAFilePath);
 }
 
 String manageConfigOTAFile::readLastedOTA()
 {
-    // #ifdef ESP32
-    //     return fileSys.readFile(lastedOTAPath, SPIFFS);
-    // #elif defined ESP8266
-    //     return fileSys.readFile(lastedOTAPath, LittleFS);
-    // #endif
+
     return fileSys.readFile(lastedOTAPath);
 }
 
@@ -116,11 +88,6 @@ boolean manageConfigOTAFile::saveProfileOTA(JsonObject dataOTA, String stateOTA)
         String contentToWrite;
         serializeJson(OTAdoc,  contentToWrite);
        
-        // #ifdef ESP32
-        //     bool saveFile = fileSys.writeFile(configOTAFilePath, contentToWrite.c_str(), SPIFFS);
-        // #elif defined ESP8266l
-        //     bool saveFile = fileSys.writeFile(configOTAFilePath, contentToWrite.c_str(), LittleFS);
-        // #endif
         bool saveFile = fileSys.writeFile(configOTAFilePath, contentToWrite.c_str());
         if(saveFile)
         {
@@ -138,11 +105,6 @@ boolean manageConfigOTAFile::saveProfileOTA(JsonObject dataOTA, String stateOTA)
 boolean manageConfigOTAFile::saveLastedOTA(String lastedDataOTA)
 {
   
-//   #ifdef ESP32
-//     String buffReadLastedOTA = lastedDataOTA.c_str();
-//   #elif defined ESP8266
-//     String buffReadLastedOTA = lastedDataOTA;
-//   #endif
   bool saveFile = false;
   JsonObject buffer;
   OTAdoc.clear();
@@ -161,11 +123,6 @@ boolean manageConfigOTAFile::saveLastedOTA(String lastedDataOTA)
         String contentLasted;
         serializeJson(buffer, contentLasted);
                
-        // #ifdef ESP32
-        //     saveFile = fileSys.writeFile(lastedOTAPath, contentLasted.c_str(), SPIFFS);
-        // #elif defined ESP8266l
-        //     saveFile = fileSys.writeFile(lastedOTAPath, contentLasted.c_str(), LittleFS);
-        // #endif
         saveFile = fileSys.writeFile(lastedOTAPath, contentLasted.c_str());
         if(saveFile)
         {
@@ -188,11 +145,6 @@ boolean manageConfigOTAFile::saveSuccessOrFail(String stateOTA)
     docsBuffer["status"] = stateOTA.c_str();
     String ProfileUpdate;
     serializeJson(docsBuffer, ProfileUpdate);
-    // #ifdef ESP32
-    //     return fileSys.writeFile(configOTAFilePath, ProfileUpdate.c_str(), SPIFFS);
-    // #elif defined ESP8266l
-    //     return fileSys.writeFile(configOTAFilePath, ProfileUpdate.c_str(), LittleFS);
-    // #endif
     return fileSys.writeFile(configOTAFilePath, ProfileUpdate.c_str());
 }
 

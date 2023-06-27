@@ -62,16 +62,6 @@ boolean manageCredentialFile::deleteCredentialFile()
       return false;
     }
     return fileSys.deleteFile(credentialPath);
-
-  //   if(!credentialFile.checkCredentialFile())
-  //   {
-  //     return false;
-  //   }
-  // #ifdef ESP32
-  //   return fileSys.deleteFile(credentialPath, SPIFFS);
-  // #elif defined ESP8266
-  //   return fileSys.deleteFile(credentialPath, LittleFS); 
-  // #endif
 }
 
 boolean manageCredentialFile::deletePreviousCredentialFile()
@@ -81,15 +71,6 @@ boolean manageCredentialFile::deletePreviousCredentialFile()
       return false;
     }
     return fileSys.deleteFile(prev_credentialPath);
-  //   if(!credentialFile.checkPreviousCredentialFile())
-  //   {
-  //     return false;
-  //   }
-  // #ifdef ESP32
-  //   return fileSys.deleteFile(prev_credentialPath, SPIFFS);
-  // #elif defined ESP8266
-  //   return fileSys.deleteFile(prev_credentialPath, LittleFS); 
-  // #endif
 }
 
 boolean manageCredentialFile:: writePreviousCredential()
@@ -99,11 +80,6 @@ boolean manageCredentialFile:: writePreviousCredential()
     return false;
   }
   return fileSys.writeFile(prev_credentialPath, readCredentialFile().c_str());
-  // #ifdef ESP32
-  //   return fileSys.writeFile(prev_credentialPath, readCredentialFile().c_str(), SPIFFS);
-  // #elif defined ESP8266
-  //   return fileSys.writeFile(prev_credentialPath, readCredentialFile().c_str(), LittleFS);
-  // #endif
 }
 
 boolean manageCredentialFile::setNewCredential(String thingIdentifier, String thingSecret)
@@ -145,33 +121,17 @@ boolean manageCredentialFile::setNewCredential(String thingIdentifier, String th
 
   String init_data = "{\"thingIdentifier\":\""+thingIdentifier+"\",\"thingSecret\":\""+thingSecret+"\",\"status\":\"Inactivated\"}";
   return fileSys.writeFile(credentialPath, init_data.c_str());
-  // #ifdef ESP32
-  //   return fileSys.writeFile(credentialPath, init_data.c_str(), SPIFFS);
-  // #elif defined ESP8266
-  //   return fileSys.writeFile(credentialPath, init_data.c_str(), LittleFS);
-  // #endif
-
 }
 
 
 
 String manageCredentialFile::readCredentialFile()
 {
-  // #ifdef ESP32
-  //   return fileSys.readFile(credentialPath, SPIFFS);
-  // #elif defined ESP8266
-  //   return fileSys.readFile(credentialPath, LittleFS);
-  // #endif
   return fileSys.readFile(credentialPath);
 }
 
 String manageCredentialFile::readPreviousCredentialFile()
 {
-  // #ifdef ESP32
-  //  return fileSys.readFile(prev_credentialPath, SPIFFS);
-  // #elif defined ESP8266
-  //  return fileSys.readFile(prev_credentialPath, LittleFS);
-  // #endif
   return fileSys.readFile(prev_credentialPath);
 }
 
@@ -228,20 +188,15 @@ boolean manageCredentialFile::saveStatusCredential(String status)
     String credentialUpdate;
     serializeJson(docsBuffer, credentialUpdate);
 
-    // #ifdef ESP32
-    //   return fileSys.writeFile(credentialPath, credentialUpdate.c_str(), SPIFFS);
-    // #elif defined ESP8266
-    //   return fileSys.writeFile(credentialPath, credentialUpdate.c_str(), LittleFS);
-    // #endif
     return fileSys.writeFile(credentialPath, credentialUpdate.c_str());
 }
 
-boolean manageCredentialFile::credentialIsActivated()
-{
-  String status = readSpacificCredentialFile("status");
-  boolean IsActivated = ((status == "Activated")? true : false);
-  return IsActivated;
-}
+// boolean manageCredentialFile::credentialIsActivated()
+// {
+//   String status = readSpacificCredentialFile("status");
+//   boolean IsActivated = ((status == "Activated")? true : false);
+//   return IsActivated;
+// }
 
 void manageCredentialFile::setActivateCredential(boolean activate)
 {

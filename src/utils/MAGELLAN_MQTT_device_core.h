@@ -25,7 +25,7 @@ support esp8266, esp32
  
 Author:(POC Device Magellan team)      
 Create Date: 25 April 2022. 
-Modified: 21 september 2022.
+Modified: 22 may 2023.
 */
 #ifndef MAGELLAN_MQTT_DEVICE_CORE_h
 #define MAGELLAN_MQTT_DEVICE_CORE_h
@@ -44,8 +44,11 @@ Modified: 21 september 2022.
 #define _default_OverBufferSize defaultOTABuffer
 #endif
 #include "Attribute_MQTT_core.h"
-//version dev v1.1.1
-#define lib_version "v1.0.1"
+
+#define lib_version lib_ver
+#define major_version _major_ver
+#define feature_version _feature_ver
+#define enhance_version _enhance_ver
 //Response Payload format some function can be set.
 #define PLAINTEXT 0 //Plaintext
 #define JSON 1 //Json
@@ -71,16 +74,10 @@ Modified: 21 september 2022.
 #define SET_UTC 1
 
 #define Production 1
-#define Staging 2 
-#define IoT 3
 
 #define _host_production "magellan.ais.co.th"
 
 #define defaultBuffer 1024
-
-// #define defaultOTABuffer 8192
-// // #define bufferSizeForOTA 8192
-// #define _default_OverBufferSize 8192
 
 #define UNKNOWN -1
 #define OUT_OF_DATE 0
@@ -94,6 +91,8 @@ typedef struct {
   String RESP;
   unsigned int CODE;
   unsigned int PayloadLength;
+  int MsgId = -1; //update 1.1.0 msgId 
+
 }EVENTS;
 
 typedef struct {
@@ -117,11 +116,8 @@ typedef std::function<void(JsonObject docs)> conf_JsonOBJ_handleCallback;
 typedef std::function<void(String key, String value)> ctrl_PTAhandleCallback;
 typedef std::function<void(String key, String value)> conf_PTAhandleCallback;
 typedef std::function<void(EVENTS event)> resp_callback;
-// typedef std::function<void(String respCODE)> resp_callback;
 
 typedef std::function<void(void)> func_callback_registerList;
-
-// #define subRemainCallback std::function<void(void)> subRemain
 
 typedef std::function<void(void)> func_callback_ms;
 
@@ -132,7 +128,6 @@ public:
   MAGELLAN_MQTT_device_core(Client& c); // for customize client internet interface
   boolean flagToken = false;
   String client_id;
-  // String unixtTime;
   void setAuthMagellan(String _thingIden, String _thingSecret, String _imei = "none"); // add on
   void begin(String _thingIden, String _thingSencret, String _imei, unsigned int Zone = Production, uint16_t bufferSize = 1024);
   void beginCustom(String _client_id, String _host, int _port, uint16_t bufferSize); //
@@ -238,6 +233,8 @@ public:
   void setChecksum(String md5Checksum);
   void setChunkSize(size_t Chunksize);
   static OTA_INFO OTA_info;
+  static func_callback_registerList duplicate_subs_list; //ver.1.1.0
+
   void reconnect(); //add on
   
 
@@ -261,7 +258,7 @@ private:
   int cnt_attempt = 0; //
   int recon_attempt = 0;
   int MAXrecon_attempt = 10;
-  unsigned long prev_time;
+  unsigned long prev_time = 0;
   unsigned long now_time;
   unsigned long threshold_ms;
 
