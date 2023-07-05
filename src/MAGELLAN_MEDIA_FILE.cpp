@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <MAGELLAN_MEDIA_FILE.h>
-
+#if defined(ESP8266)
+    //not support
+#elif defined(ESP32)
 const char *enumToString(mediaTypeEnum mediatype)
 {
     switch (mediatype)
@@ -484,3 +486,4 @@ String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(uint8_t *binaryData, size_t s
     String b64Mime = "data:"+mediatypeStr+"/"+subtype+";base64," + rawB64;
     return b64Mime;
 }
+#endif
