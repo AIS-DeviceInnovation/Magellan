@@ -61,6 +61,17 @@ void MAGELLAN_MQTT::reconnect()
 
 void MAGELLAN_MQTT::begin(Setting _setting)
 {
+#ifdef BYPASS_REQTOKEN
+  if (_setting.ThingToken != "null" && _setting.ThingToken.length() > 25)
+  {
+    this->setManualToken(_setting.ThingToken);
+  }
+  else
+  {
+    Serial.print(F("# Invalid setting ThingToken"));
+  }
+#endif
+
   if (_setting.clientBufferSize > _default_OverBufferSize)
   {
     Serial.print(F("# You have set a buffer size greater than 8192, adjusts to: "));
@@ -98,6 +109,7 @@ void MAGELLAN_MQTT::begin(Setting _setting)
     Serial.print(F("IMEI: "));
     Serial.println(_setting.IMEI);
     beginCustom(_setting.ThingIdentifier, _setting.ThingSecret, _setting.IMEI, _setting.endpoint, mgPort, revertChunkToBufferSize);
+    setting = _setting;
   }
   else
   {
@@ -111,7 +123,7 @@ void MAGELLAN_MQTT::begin(Setting _setting)
   }
 }
 
-void MAGELLAN_MQTT::begin(String _thingIden, String _thingSecret, String _imei, unsigned int Zone, uint16_t bufferSize)
+void MAGELLAN_MQTT::begin(String _thingIden, String _thingSecret, String _imei, uint16_t bufferSize)
 {
   _thingIden.trim();
   _thingSecret.trim();
@@ -128,7 +140,7 @@ void MAGELLAN_MQTT::begin(String _thingIden, String _thingSecret, String _imei, 
     t_iden = this->credential.getThingIdentifier();
     t_sect = this->credential.getThingSecret();
   }
-  this->coreMQTT->begin(t_iden, t_sect, _imei, Zone, bufferSize);
+  this->coreMQTT->begin(t_iden, t_sect, _imei, bufferSize);
   coreMQTT->activeOTA(attr.calculate_chunkSize, true);
 }
 
@@ -1388,7 +1400,7 @@ void MAGELLAN_MQTT::ClientConfig::clear()
   coreMQTT->clearSensorBuffer(attr.docClientConf);
 }
 
-int isUpToDate = UNKNOWN;
+OTA_state isUpToDate = OTA_state::UNKNOWN_STATE;
 void MAGELLAN_MQTT::checkUpdate_inside()
 {
   this->registerInfoOTA();
@@ -1398,15 +1410,15 @@ void MAGELLAN_MQTT::checkUpdate_inside()
     isUpToDate = this->OTA.checkUpdate();
     switch (isUpToDate)
     {
-    case UNKNOWN:
+    case OTA_state::UNKNOWN_STATE:
       Serial.println(F("#[Allow auto OTA] firmware profile is EMPTY or not set Publish"));
       break;
-    case OUT_OF_DATE:
+    case OTA_state::OUT_OF_DATE:
       Serial.println(F("#[Allow auto OTA] firmware profile is OUT_OF_DATE"));
       Serial.println(F("#[Allow auto OTA] OTA Execute start!"));
       this->OTA.executeUpdate();
       break;
-    case UP_TO_DATE:
+    case OTA_state::UP_TO_DATE:
       Serial.println(F("#[Allow auto OTA] firmware profile is already UP_TO_DATE"));
       break;
     default:
@@ -1450,46 +1462,74 @@ boolean MAGELLAN_MQTT::getServerTime()
 
 void MAGELLAN_MQTT::getControl(String focusOnKey, ctrl_handleCallback ctrl_callback)
 {
+  attr.sub_check_list.SetSubscription(SubControlPlaintext, true);
   coreMQTT->getControl(focusOnKey, ctrl_callback);
 }
 
 void MAGELLAN_MQTT::getControl(ctrl_PTAhandleCallback ctrl_pta_callback)
 {
+  attr.sub_check_list.SetSubscription(SubControlPlaintext, true);
   coreMQTT->getControl(ctrl_pta_callback);
 }
 
 void MAGELLAN_MQTT::getControlJSON(ctrl_Json_handleCallback ctrl_json_callback)
 {
+  attr.sub_check_list.SetSubscription(SubControlJSON, true);
   coreMQTT->getControlJSON(ctrl_json_callback);
 }
 
 void MAGELLAN_MQTT::getControlJSON(ctrl_JsonOBJ_handleCallback jsonOBJ_cb)
 {
+  attr.sub_check_list.SetSubscription(SubControlJSON, true);
   coreMQTT->getControlJSON(jsonOBJ_cb);
 }
 
 void MAGELLAN_MQTT::getServerConfig(String focusOnKey, conf_handleCallback _conf_callback)
 {
+  attr.sub_check_list.SetSubscription(SubServerConfigPlaintext, true);
   coreMQTT->getConfig(focusOnKey, _conf_callback);
 }
 
 void MAGELLAN_MQTT::getServerConfig(conf_PTAhandleCallback conf_pta_callback)
 {
+  attr.sub_check_list.SetSubscription(SubServerConfigPlaintext, true);
   coreMQTT->getConfig(conf_pta_callback);
 }
 
 void MAGELLAN_MQTT::getServerConfigJSON(conf_Json_handleCallback conf_json_callback)
 {
+  attr.sub_check_list.SetSubscription(SubServerConfigJSON, true);
   coreMQTT->getConfigJSON(conf_json_callback);
 }
 
 void MAGELLAN_MQTT::getServerConfigJSON(conf_JsonOBJ_handleCallback jsonOBJ_cb)
 {
+  attr.sub_check_list.SetSubscription(SubServerConfigJSON, true);
   coreMQTT->getConfigJSON(jsonOBJ_cb);
 }
 
 void MAGELLAN_MQTT::getResponse(unsigned int eventResponse, resp_callback resp_cb)
 {
+  switch (eventResponse)
+  {
+  case UNIXTIME:
+    attr.sub_check_list.SetSubscription(SubServerTimePlaintext, true);
+    break;
+  case RESP_REPORT_JSON:
+    attr.sub_check_list.SetSubscription(SubReportResponseJSON, true);
+    break;
+  case RESP_REPORT_PLAINTEXT:
+    attr.sub_check_list.SetSubscription(SubReportResponsePlaintext, true);
+    break;
+  case RESP_HEARTBEAT_JSON:
+    attr.sub_check_list.SetSubscription(SubHeartbeatJSON, true);
+    break;
+  case RESP_HEARTBEAT_PLAINTEXT:
+    attr.sub_check_list.SetSubscription(SubHeartbeatPlaintext, true);
+    break;
+  default:
+    break;
+  }
   coreMQTT->getRESP(eventResponse, resp_cb);
 }
 
@@ -1599,6 +1639,98 @@ boolean MAGELLAN_MQTT::OnTheAir::downloadFirmware(unsigned int fw_chunkPart, siz
   return statusDL;
 }
 
+// 1.1.2
+void MAGELLAN_MQTT::subscribesHandler(func_callback_registerList cb_onConnected)
+{
+  duplicate_subs_list = [&]
+  {
+    if (cb_onConnected != NULL)
+    {
+      cb_onConnected();
+    }
+    attr.sub_check_list.GetSubList();
+    if (attr.ext_Token != "" && attr.ext_Token.length() > 30)
+    {
+      if (!attr.inProcessOTA)
+      {
+        // if (attr.sub_check_list.SubControlPlaintext)
+        if (attr.sub_check_list.GetSubscriptionStatus("SubControlPlaintext"))
+        {
+          coreMQTT->registerControl(PLAINTEXT);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubControlJSON"))
+        {
+          coreMQTT->registerControl(JSON);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubServerConfigPlaintext"))
+        {
+          coreMQTT->registerConfig(PLAINTEXT);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubServerConfigJSON"))
+        {
+          coreMQTT->registerConfig(JSON);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubServerTimePlaintext"))
+        {
+          coreMQTT->registerTimestamp(PLAINTEXT);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubServerTimeJSON"))
+        {
+          coreMQTT->registerTimestamp(JSON);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubReportResponseJSON"))
+        {
+          coreMQTT->registerResponseReport(JSON);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubReportResponsePlaintext"))
+        {
+          coreMQTT->registerResponseReport(PLAINTEXT);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubHeartbeatJSON"))
+        {
+          coreMQTT->registerResponseHeartbeat(JSON);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubHeartbeatPlaintext"))
+        {
+          coreMQTT->registerResponseHeartbeat(PLAINTEXT);
+        }
+        if (attr.sub_check_list.GetSubscriptionStatus("SubReportWithTimestamp"))
+        {
+          coreMQTT->registerResponseReportTimestamp();
+        }
+      }
+      // else
+      // {
+      //   attr.triggerRemainSub = true;
+      //   Serial.println("@ Found OTA Inprocessing Unsubscribes unnecessary");
+      //   if (attr.sub_check_list.SubControlPlaintext)
+      //     coreMQTT->unregisterControl(PLAINTEXT);
+      //   if (attr.sub_check_list.SubControlJSON)
+      //     coreMQTT->unregisterControl(JSON);
+      //   if (attr.sub_check_list.SubServerConfigPlaintext)
+      //     coreMQTT->unregisterConfig(PLAINTEXT);
+      //   if (attr.sub_check_list.SubServerConfigJSON)
+      //     coreMQTT->unregisterConfig(JSON);
+      //   if (attr.sub_check_list.SubServerTimePlaintext)
+      //     coreMQTT->unregisterTimestamp(PLAINTEXT);
+      //   if (attr.sub_check_list.SubServerTimeJSON)
+      //     coreMQTT->unregisterTimestamp(JSON);
+      //   if (attr.sub_check_list.SubReportResponseJSON)
+      //     coreMQTT->unregisterResponseReport(JSON);
+      //   if (attr.sub_check_list.SubReportResponsePlaintext)
+      //     coreMQTT->unregisterResponseReport(PLAINTEXT);
+      //   if (attr.sub_check_list.SubHeartbeatJSON)
+      //     coreMQTT->unregisterResponseHeartbeat(JSON);
+      //   if (attr.sub_check_list.SubHeartbeatPlaintext)
+      //     coreMQTT->unregisterResponseHeartbeat(PLAINTEXT);
+      //   if (attr.sub_check_list.SubReportWithTimestamp)
+      //     coreMQTT->unregisterResponseReportTimestamp();
+      // }
+    }
+  };
+  coreMQTT->registerList(duplicate_subs_list);
+}
+
 OTA_INFO MAGELLAN_MQTT::OnTheAir::utility()
 {
   return coreMQTT->OTA_info;
@@ -1609,7 +1741,7 @@ int countCheckUpdate = 0;
 boolean checkUntil_end = false;
 unsigned long check_prvMillis = 0;
 unsigned long diff_timeMillis = 0;
-int MAGELLAN_MQTT::OnTheAir::checkUpdate()
+OTA_state MAGELLAN_MQTT::OnTheAir::checkUpdate()
 {
   if (attr.usingCheckUpdate)
   {
@@ -1618,7 +1750,7 @@ int MAGELLAN_MQTT::OnTheAir::checkUpdate()
   }
   Serial.println(F("# Check Update"));
   Serial.println(F("# Waiting for response"));
-  coreMQTT->OTA_info.firmwareIsUpToDate = UNKNOWN;
+  coreMQTT->OTA_info.firmwareIsUpToDate = OTA_state::UNKNOWN_STATE;
   checkUntil_end = false;
   attr.usingCheckUpdate = true;
   countCheckUpdate = 0;
@@ -1631,7 +1763,7 @@ int MAGELLAN_MQTT::OnTheAir::checkUpdate()
     diff_timeMillis = millis() - check_prvMillis;
     if (diff_timeMillis > 3000 && !checkUntil_end) // get fw info every 5sec until fwReady
     {
-      if (coreMQTT->OTA_info.firmwareIsUpToDate == UNKNOWN)
+      if (coreMQTT->OTA_info.firmwareIsUpToDate == OTA_state::UNKNOWN_STATE)
       {
         attr.usingCheckUpdate = true;
         coreMQTT->requestFW_Info();
@@ -1648,17 +1780,25 @@ int MAGELLAN_MQTT::OnTheAir::checkUpdate()
           break;
         }
       }
-      else if (coreMQTT->OTA_info.firmwareIsUpToDate == UP_TO_DATE)
+      else if (coreMQTT->OTA_info.firmwareIsUpToDate == OTA_state::UP_TO_DATE)
       {
         countCheckUpdate = 0;
         // checkUntil_end = true;
         // break;
       }
-      else if (coreMQTT->OTA_info.firmwareIsUpToDate == OUT_OF_DATE)
+      else if (coreMQTT->OTA_info.firmwareIsUpToDate == OTA_state::OUT_OF_DATE)
       {
         countCheckUpdate = 0;
         // checkUntil_end = true;
         // break;
+      }
+      else if (coreMQTT->OTA_info.firmwareIsUpToDate == OTA_state::NOT_AVAILABLE_STATE)
+      {
+        countCheckUpdate = 0;
+        // checkUntil_end = true;
+        Serial.println(F("# ====================================="));
+        Serial.println(F("# Debug Device not found or don't have FOTA Profile"));
+        Serial.println(F("# ====================================="));
       }
       if (!attr.usingCheckUpdate)
       {
@@ -1688,7 +1828,7 @@ boolean exc_until_info_fwReady = true;
 unsigned long exc_prvMillis = 0;
 void MAGELLAN_MQTT::OnTheAir::executeUpdate()
 {
-  coreMQTT->OTA_info.firmwareIsUpToDate = UNKNOWN; // back to Unknown for recieve new firmware status
+  coreMQTT->OTA_info.firmwareIsUpToDate = OTA_state::UNKNOWN_STATE; // back to Unknown for recieve new firmware status
 
   if (!exc_until_info_fwReady)
   {
@@ -1711,7 +1851,7 @@ void MAGELLAN_MQTT::OnTheAir::executeUpdate()
 
       exc_prvMillis = millis();
 
-      if (OTA_info.firmwareIsUpToDate == UNKNOWN)
+      if (OTA_info.firmwareIsUpToDate == OTA_state::UNKNOWN_STATE)
       {
         countIfUnknownVersion++;
         attr.usingCheckUpdate = false;
@@ -1737,7 +1877,7 @@ void MAGELLAN_MQTT::OnTheAir::executeUpdate()
           break;
         }
       }
-      else if (OTA_info.firmwareIsUpToDate == UP_TO_DATE)
+      else if (OTA_info.firmwareIsUpToDate == OTA_state::UP_TO_DATE)
       {
         Serial.println(F(""));
         Serial.println(F("# ====================================="));
@@ -1755,7 +1895,7 @@ void MAGELLAN_MQTT::OnTheAir::executeUpdate()
         }
         break;
       }
-      else if (OTA_info.firmwareIsUpToDate == OUT_OF_DATE)
+      else if (OTA_info.firmwareIsUpToDate == OTA_state::OUT_OF_DATE)
       {
         exc_until_info_fwReady = attr.startReqDownloadOTA;
         if (!attr.inProcessOTA)
@@ -1768,13 +1908,13 @@ void MAGELLAN_MQTT::OnTheAir::executeUpdate()
         }
       }
     }
-    if (OTA_info.firmwareIsUpToDate == UP_TO_DATE && exc_until_info_fwReady)
+    if (OTA_info.firmwareIsUpToDate == OTA_state::OUT_OF_DATE && exc_until_info_fwReady)
     {
       exc_until_info_fwReady = true;
       Serial.println(F("# Debug Uptodate but infinity loop [UP_TO_DATE]"));
       break;
     }
-    else if (OTA_info.firmwareIsUpToDate == UNKNOWN && exc_until_info_fwReady)
+    else if (OTA_info.firmwareIsUpToDate == OTA_state::UNKNOWN_STATE && exc_until_info_fwReady)
     {
       exc_until_info_fwReady = true;
       Serial.println(F("# Debug Uptodate but infinity loop [UNKNOWN]"));
@@ -1971,3 +2111,10 @@ void MAGELLAN_MQTT::OnTheAir::Downloads::setDelay(unsigned int delayMillis)
 {
   attr.delayRequest_download = delayMillis;
 }
+
+#ifdef BYPASS_REQTOKEN
+void MAGELLAN_MQTT::setManualToken(String token_)
+{
+  this->coreMQTT->setManualToken(token_);
+}
+#endif

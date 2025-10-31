@@ -46,6 +46,9 @@ struct Setting
   String IMEI = "null";
   size_t clientBufferSize = defaultBuffer;
   String endpoint = _host_production;
+#ifdef BYPASS_REQTOKEN
+  String ThingToken = "null";
+#endif
 };
 
 struct RetransmitSetting
@@ -104,17 +107,23 @@ class MAGELLAN_MQTT : private MAGELLAN_MQTT_device_core
 {
 private:
   void checkUpdate_inside();
-
+  // 1.1.1
+#ifdef BYPASS_REQTOKEN
+  void setManualToken(String token_);
+#endif
 public:
   MAGELLAN_MQTT(Client &_Client);
   boolean isConnected();
   void reconnect();
   void begin(Setting _setting = setting);
-  void begin(String _thingIden, String _thingSencret, String _imei, unsigned int Zone = Production, uint16_t bufferSize = 1024);
-  void beginCustom(String _thingIden, String _thingSencret, String _imei, String _host = "magellan.ais.co.th", int _port = mgPort, uint16_t bufferSize = 1024);
+  void begin(String _thingIden, String _thingSencret, String _imei, uint16_t bufferSize = defaultBuffer);
+  void beginCustom(String _thingIden, String _thingSencret, String _imei, String _host = _host_production, int _port = mgPort, uint16_t bufferSize = defaultBuffer);
   void loop();
   void heartbeat(unsigned int second);
   void subscribes(func_callback_registerList cb_subscribe_list);
+  // 1.1.2
+  void subscribesHandler(func_callback_registerList cb_onConnected = NULL); // auto Subscribe
+
   void interval(unsigned long second, func_callback_ms cb_interval);
   boolean getServerTime();
   void getControl(String focusOnKey, ctrl_handleCallback ctrl_callback);
@@ -294,7 +303,7 @@ public:
     OTA_INFO utility();
     void autoUpdate(boolean flagSetAuto = true);
     boolean getAutoUpdate();
-    int checkUpdate();
+    OTA_state checkUpdate();
     void executeUpdate();
     String readDeviceInfo();
     struct Downloads

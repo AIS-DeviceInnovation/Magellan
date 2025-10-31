@@ -2,11 +2,14 @@
 #define MANAGECREDENTIALFILE_H
 #include <Arduino.h>
 #ifdef ESP32
+#ifdef MG_USE_SPIFFS
   #include "SPIFFS.h"
-  #include "FS.h"
+#else
+    #include "LittleFS.h"
+
+  #endif
 #elif defined ESP8266
   #include "LittleFS.h"
-  #include "FS.h"
 #endif
 #include <vector>
 #include "FileSystem.h"
