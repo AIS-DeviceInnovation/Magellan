@@ -1,14 +1,12 @@
 #include <Arduino.h>
 #include <MAGELLAN_MQTT.h>
 #include <MAGELLAN_WiFi_SETTING.h> //optional you can using wifi connect with your own function
-#define REGEN_BY_CONDITION false
 WiFiClient WiFi_client;
 MAGELLAN_MQTT magel(WiFi_client);
 
 String SSID = "set_your_ssid";
 String PASS = "set_your_password";
 
-int checkStatusUpdate = UNKNOWN;
 void setup() 
 {
   Serial.begin(115200);
@@ -21,7 +19,7 @@ void setup()
   Serial.println("ThingIdentifier: "+ magel.credential.getThingIdentifier());
   Serial.println("ThingSecret: "+ magel.credential.getThingSecret());
   Serial.println("# Regenerate Credential");
-  magel.credential.regenerate(REGEN_BY_CONDITION); // if set true == will regenerate only credential activated, false regenerate without condition
+  magel.credential.regenerate(); 
   Serial.println("# Read Credential 2nd time (After Regenerate)");
   Serial.println("ThingIdentifier: "+ magel.credential.getThingIdentifier());
   Serial.println("ThingSecret: "+ magel.credential.getThingSecret());

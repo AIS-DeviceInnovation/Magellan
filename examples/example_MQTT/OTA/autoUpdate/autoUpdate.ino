@@ -10,7 +10,7 @@ String PASS = "set_your_password";
 String thingIdentifier = "set_your_thing_identifier";
 String thingSecret = "set_your_thing_secret";
 
-int checkStatusUpdate = UNKNOWN;
+OTA_state checkStatusUpdate = OTA_state::UNKNOWN_STATE;
 void setup() 
 {
   Serial.begin(115200);
@@ -36,11 +36,11 @@ void loop()
     // doing function something every 10 sec here!
     switch (checkStatusUpdate)
     {
-    case UP_TO_DATE:
+    case OTA_state::UP_TO_DATE:
       Serial.print(F("checkStatusUpdate: "));
       Serial.println("# UP_TO_DATE");
       break;
-    case OUT_OF_DATE:
+    case OTA_state::OUT_OF_DATE:
       Serial.print(F("checkStatusUpdate: "));
       Serial.println(F("# OUT_OF_DATE"));
       break;   

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <MAGELLAN_MEDIA_FILE.h>
 #if defined(ESP8266)
-    //not support
+//esp8266 not supported
 #elif defined(ESP32)
 const char *enumToString(mediaTypeEnum mediatype)
 {

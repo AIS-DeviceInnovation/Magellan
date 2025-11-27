@@ -38,9 +38,11 @@ Modified: 22 may 2023.
 #ifdef ESP32
 #include <Update.h>
 #define defaultOTABuffer 8192
+#define defaultBuffer defaultOTABuffer
 #define _default_OverBufferSize defaultOTABuffer
 #elif defined ESP8266
 #define defaultOTABuffer 4096
+#define defaultBuffer defaultOTABuffer
 #define _default_OverBufferSize defaultOTABuffer
 #endif
 #include "Attribute_MQTT_core.h"
@@ -53,14 +55,14 @@ Modified: 22 may 2023.
 #define PLAINTEXT 0 //Plaintext
 #define JSON 1 //Json
 
-#define ERROR 0
+#define M_ERROR 0
 #define TOKEN 1
 #define CONTROL_JSON 2
 #define CONTROL_PLAINTEXT 3
 #define CONFIG_JSON 4
 #define CONFIG_PLAINTEXT 5
 #define UNIXTIME 6
-#define UTCTIME 7
+// #define UTCTIME 7
 #define RESP_REPORT_JSON 8
 #define RESP_REPORT_PLAINTEXT 9
 #define RESP_REPORT_TIMESTAMP 10
@@ -71,17 +73,18 @@ Modified: 22 may 2023.
 #define mgPort 1883
 //for define mode Timestamp
 #define SET_UNIXTS 0
-#define SET_UTC 1
+// #define SET_UTC 1
 
-#define Production 1
+// #define Production 1
 
-#define _host_production "magellan.ais.co.th"
+#define _host_production "device-entmagellan.ais.co.th"
 
-#define defaultBuffer 1024
-
-#define UNKNOWN -1
-#define OUT_OF_DATE 0
-#define UP_TO_DATE 1
+enum class OTA_state{
+    UNKNOWN_STATE = -1,
+    OUT_OF_DATE,
+    UP_TO_DATE,
+    NOT_AVAILABLE_STATE
+};
 
 typedef struct {
   String Topic;
@@ -97,7 +100,8 @@ typedef struct {
 
 typedef struct {
   boolean isReadyOTA = false;
-  int firmwareIsUpToDate = -1; // -1 unknow, 0 out of date, 1 up to date
+  // int firmwareIsUpToDate = -1; // -1 unknow, 0 out of date, 1 up to date
+  OTA_state firmwareIsUpToDate = OTA_state::UNKNOWN_STATE; // -1 unknow, 0 out of date, 1 up to date
   boolean inProcessOTA = false;
   unsigned int firmwareTotalSize = 0;
   String firmwareName = "UNKNOWN";
@@ -129,9 +133,9 @@ public:
   boolean flagToken = false;
   String client_id;
   void setAuthMagellan(String _thingIden, String _thingSecret, String _imei = "none"); // add on
-  void begin(String _thingIden, String _thingSencret, String _imei, unsigned int Zone = Production, uint16_t bufferSize = 1024);
+  void begin(String _thingIden, String _thingSencret, String _imei, uint16_t bufferSize = 1024);
   void beginCustom(String _client_id, String _host, int _port, uint16_t bufferSize); //
-  void begin(String _client_id, unsigned int Zone = Production, uint16_t bufferSize = 1024); //
+  void begin(String _client_id, uint16_t bufferSize = 1024); //
  
   String getHostName(); //
   String readToken();

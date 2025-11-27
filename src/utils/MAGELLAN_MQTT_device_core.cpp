@@ -102,6 +102,9 @@ String b2str(byte *payload, unsigned int length) // convert byte* to String
   return String(buffer_payload);
 }
 
+// 1.1.2
+SubscribesCheckLists Attribute_MQTT_core::sub_check_list;
+
 typedef struct
 {
   String registerKey;
@@ -133,7 +136,7 @@ regisAPI *_startRESP = NULL;
 regisAPI *_startOBJ_CTRL = NULL;
 regisAPI *_startOBJ_CONF = NULL;
 
-boolean ext_useAdvanceCallback = false;
+// boolean ext_useAdvanceCallback = false;
 
 void (*cb_internal)(EVENTS events, char *);
 
@@ -203,6 +206,7 @@ boolean pubClientConfig(String payload) // for external function member
 
 boolean sub_InfoOTA()
 {
+  attr.sub_check_list.SetSubscription(SubFirmwareInfo, true);
   String topic = "api/v2/thing/" + attr.ext_Token + "/firmwareinfo/resp";
   boolean Sub_status = attr.mqtt_client->subscribe(topic.c_str());
   // Serial.println(topic);
@@ -214,6 +218,7 @@ boolean sub_InfoOTA()
 
 boolean unsub_InfoOTA()
 {
+  attr.sub_check_list.SetSubscription(SubFirmwareInfo, false);
   String topic = "api/v2/thing/" + attr.ext_Token + "/firmwareinfo/resp";
   boolean Sub_status = attr.mqtt_client->unsubscribe(topic.c_str());
   // Serial.println(topic);
@@ -236,6 +241,7 @@ boolean pub_Info()
 
 boolean sub_DownloadOTA()
 {
+  attr.sub_check_list.SetSubscription(SubFirmwareDownload, true);
   String topic = "api/v2/thing/" + attr.ext_Token + "/firmwaredownload/resp/+";
   boolean Sub_status = attr.mqtt_client->subscribe(topic.c_str());
   // Serial.println(topic);
@@ -247,6 +253,7 @@ boolean sub_DownloadOTA()
 
 boolean unsub_DownloadOTA()
 {
+  attr.sub_check_list.SetSubscription(SubFirmwareDownload, false);
   String topic = "api/v2/thing/" + attr.ext_Token + "/firmwaredownload/resp/+";
   boolean Sub_status = attr.mqtt_client->unsubscribe(topic.c_str());
   // Serial.println(topic);
@@ -359,6 +366,11 @@ void checkUpdate(String topic, String payload)
       {
         Serial.println(F("# [warning]Firmware Information is wrong or empty!"));
       }
+      else if (payload.indexOf("40400") != -1)
+      {
+        MAGELLAN_MQTT_device_core::OTA_info.firmwareIsUpToDate = OTA_state::NOT_AVAILABLE_STATE; // 1.2.1
+        attr.usingCheckUpdate = false;
+      }
       else
       {
         attr.checkFirmwareUptodate = configOTAFile.compareFirmwareIsUpToDate(fw_doc);
@@ -371,11 +383,11 @@ void checkUpdate(String topic, String payload)
 
         if (attr.checkFirmwareUptodate)
         {
-          MAGELLAN_MQTT_device_core::OTA_info.firmwareIsUpToDate = UP_TO_DATE;
+          MAGELLAN_MQTT_device_core::OTA_info.firmwareIsUpToDate = OTA_state::UP_TO_DATE;
         }
         else
         {
-          MAGELLAN_MQTT_device_core::OTA_info.firmwareIsUpToDate = OUT_OF_DATE;
+          MAGELLAN_MQTT_device_core::OTA_info.firmwareIsUpToDate = OTA_state::OUT_OF_DATE;
         }
         // MAGELLAN_MQTT_device_core::OTA_info.firmwareIsUpToDate = ((attr.checkFirmwareUptodate)? UP_TO_DATE : OUT_OF_DATE);
         attr.usingCheckUpdate = false;
@@ -458,7 +470,7 @@ void save_fw_info(String topic, String payload)
           attr.isFirmwareUptodate = configOTAFile.compareFirmwareOTA(fw_doc);
 
           // ver 1.1.0 UPDATED
-          if (attr.isFirmwareUptodate == UP_TO_DATE)
+          if (attr.isFirmwareUptodate)
           {
             JsonObject infoCurrentFW = configOTAFile.readObjectLastedOTA();
             String fw_ver = infoCurrentFW["versionfirmware"];
@@ -468,7 +480,7 @@ void save_fw_info(String topic, String payload)
           }
           // ver 1.1.0 UPDATED
 
-          MAGELLAN_MQTT_device_core::OTA_info.firmwareIsUpToDate = ((attr.isFirmwareUptodate) ? UP_TO_DATE : OUT_OF_DATE);
+          MAGELLAN_MQTT_device_core::OTA_info.firmwareIsUpToDate = ((attr.isFirmwareUptodate) ? OTA_state::UP_TO_DATE : OTA_state::OUT_OF_DATE);
           MAGELLAN_MQTT_device_core::OTA_info.firmwareName = configOTAFile.readSpacificFromConfFile("namefirmware");
           size_t buffReadSizefirmware = configOTAFile.readSpacificFromConfFile("sizefirmware").toInt();
           MAGELLAN_MQTT_device_core::OTA_info.firmwareTotalSize = buffReadSizefirmware;
@@ -790,7 +802,7 @@ void checkRequestRetransmit()
 void msgCallback_internalHandler(char *topic, byte *payload, unsigned int length)
 {
   String action = "ERROR";
-  unsigned int buffEvent = ERROR;
+  unsigned int buffEvent = M_ERROR;
   String b_topic = String(topic);
   String _payload = b2str(payload, length);
   String key = "null"; // if this topic is'nt PLAINTEXT
@@ -1127,7 +1139,6 @@ void msgCallback_internalHandler(char *topic, byte *payload, unsigned int length
   {
     buffEvent = RESP_REPORT_JSON;
     action = "RESP_REPORT_JSON";
-
     JsonObject OBJ_report_resp = deJson(_payload);
     String _code = OBJ_report_resp["Code"];
 
@@ -1216,10 +1227,6 @@ void msgCallback_internalHandler(char *topic, byte *payload, unsigned int length
     action = "GET_ENDPOINT";
     attr.ext_EndPoint = b_payload;
   }
-  // Serial.println("#INSIDE ");
-  // Serial.println(action);
-  // Serial.println(_payload);
-  // Serial.println("#INSIDE ");
 
   intern_EVENT.CODE = code.toInt();
   intern_EVENT.Topic = b_topic;
@@ -1231,7 +1238,8 @@ void msgCallback_internalHandler(char *topic, byte *payload, unsigned int length
   attr.matchMsgId_cb = intern_EVENT.MsgId;
   checkRequestRetransmit();
 
-  if (ext_useAdvanceCallback) // routing to onMessage Callback when use setMessageListener(Callback)
+  // if (ext_useAdvanceCallback) // routing to onMessage Callback when use setMessageListener(Callback)
+  if (attr.useAdvanceCallback) // routing to onMessage Callback when use setMessageListener(Callback)
   {
     cb_internal(intern_EVENT, b_payload);
   }
@@ -1511,7 +1519,7 @@ void MAGELLAN_MQTT_device_core::beginCustom(String _client_id, String _host, int
   }
 }
 
-void MAGELLAN_MQTT_device_core::begin(String _thingIden, String _thingSecret, String _imei, unsigned int Zone, uint16_t bufferSize)
+void MAGELLAN_MQTT_device_core::begin(String _thingIden, String _thingSecret, String _imei, uint16_t bufferSize)
 {
   setAuthMagellan(_thingIden, _thingSecret, _imei);
   Serial.print(F("ThingIdentifier: "));
@@ -1521,7 +1529,7 @@ void MAGELLAN_MQTT_device_core::begin(String _thingIden, String _thingSecret, St
   Serial.print(F("IMEI: "));
   Serial.println(_imei);
   if (_thingIden != NULL && _thingSecret != NULL)
-    begin(_thingIden, Zone, bufferSize);
+    begin(_thingIden, bufferSize);
   else
   {
     Serial.println(F("# ThingIdentifier or ThingSecret is incorrect please check"));
@@ -1532,21 +1540,12 @@ void MAGELLAN_MQTT_device_core::begin(String _thingIden, String _thingSecret, St
   }
 }
 
-void MAGELLAN_MQTT_device_core::begin(String _client_id, unsigned int Zone, uint16_t bufferSize)
+void MAGELLAN_MQTT_device_core::begin(String _client_id, uint16_t bufferSize)
 {
   Serial.println("=================== Begin MAGELLAN Library  " + String(lib_version) + " ===================");
   delay(5000);
   String _host = _host_production;
-  switch (Zone)
-  {
-  case Production:
-    _host = _host_production;
-    break;
-  default:
-    _host = _host_production;
-    Serial.println(F("# OUT OF LENGTH ZONE MOVE TO Production"));
-    break;
-  }
+  
   this->host = _host;
   this->port = mgPort;
   this->client_id = _client_id;
@@ -1747,8 +1746,9 @@ void MAGELLAN_MQTT_device_core::setManualToken(String _token)
   _token.trim();
   if (_token.length() >= 36)
   {
-    token = _token;
-    acceptToken(token);
+    this->token = _token;
+    attr.ext_Token = this->token;
+    acceptToken(this->token);
   }
 }
 

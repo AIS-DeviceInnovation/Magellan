@@ -3,13 +3,13 @@
 #define DEBUG false  //set to true for debug output, false for no debug output
 #define DEBUG_SERIAL if(DEBUG)Serial
 
-#ifdef ESP32
-  #include "SPIFFS.h"
-  #include "FS.h"
-#elif defined ESP8266
-  #include "LittleFS.h"
-  #include "FS.h"
-#endif
+// #ifdef ESP32
+//   #include "SPIFFS.h"
+//   #include "FS.h"
+// #elif defined ESP8266
+//   #include "LittleFS.h"
+//   #include "FS.h"
+// #endif
 void FileSystem::begin()
 {
    isFileSystemInit = true;

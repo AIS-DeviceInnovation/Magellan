@@ -9,9 +9,16 @@ extern "C"
 }
 
 #ifdef ESP32
-#define FSmemory SPIFFS
+#ifdef MG_USE_SPIFFS
+  #include "SPIFFS.h"
+  #define FSmemory SPIFFS
+#else
+    #include "LittleFS.h"
+    #define FSmemory LittleFS
+  #endif
 #elif defined ESP8266
-#define memory LittleFS
+  #include "LittleFS.h"
+  #define FSmemory LittleFS
 #endif
 
 //Client Internet interface connection

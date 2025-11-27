@@ -1,4 +1,4 @@
-![Library Version](https://img.shields.io/badge/Version-1.1.0-green)
+![Library Version](https://img.shields.io/badge/Version-1.2.0-green)
 
 # Magellan Library for Arduino
 
@@ -53,7 +53,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
 
 ### สมัคร AIS Playground และ Magellan Platform
 
- * เข้าไปที่ https://magellan.ais.co.th/ กด REGISTER เพื่อสมัครสมาชิก หากไม่มี Account ของ AIS Playground ให้กดเลือก [Register](https://apisgl.ais.co.th/auth/v3.1/oauth/authorize?response_type=code&client_id=iQftE1wqrGJMCbco8D4MADHySRZpgMXlI5tU3sBYNmY%3D&redirect_uri=https%3A%2F%2Fmagellan.ais.co.th%2F&state=sgl&scope=profile#) กรอกข้อมูลแล้วกด ปุ่ม Done จากนั้นรอ Email ยืนยัน 
+ * เข้าไปที่ https://enterprise-magellan.ais.co.th/ กด REGISTER เพื่อสมัครสมาชิก หากไม่มี Account ของ AIS Playground ให้กดเลือก [Register](https://apisgl.ais.co.th/auth/v3.1/oauth/authorize?response_type=code&client_id=iQftE1wqrGJMCbco8D4MADHySRZpgMXlI5tU3sBYNmY%3D&redirect_uri=https%3A%2F%2Fmagellan.ais.co.th%2F&state=sgl&scope=profile#) กรอกข้อมูลแล้วกด ปุ่ม Done จากนั้นรอ Email ยืนยัน 
  * เมื่อได้รับ Email ยืนยันเรียบร้อยแล้ว สามารถ Login ใช้งาน Magellan Platform ได้ผ่าน Email ที่สมัครไว้
 
 ### ลงทะเบียน Device และสร้างโปรเจค
@@ -107,7 +107,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
 ```cpp
    setting.ThingIdentifier = "123441023449232XXX";
    setting.ThingSecret = "14912559924224242XXX";
-   setting.endpoint = "magellan.ais.co.th"; //if not set *default: magellan.ais.co.th
+   setting.endpoint = "device-entmagellan.ais.co.th"; //if not set *default: device-entmagellan.ais.co.th
    setting.clientBufferSize = defaultOTAbuffer; // if not set *default: 1024
    magel.begin(setting);
 ```
@@ -166,6 +166,33 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
      /* do something */
    }
 ```
+## 🎉 NEW version 1.2.0 (auto subscribe follow by Register Callback)
+```cpp
+   void doSomeThingOnceAfterReconnect(){
+
+      Serial.println("Connected!!!");
+   }
+
+   void loop()
+   {
+     magel.loop();
+     magel.subscribesHandler(doSomeThingOnceAfterReconnect);
+     /* do something */
+   }
+```
+## 🎉 ใน version 1.2.0 Magellan SDK ได้มีการเปลี่ยน FS library 
+  * Default จาก `SPIFFS` มาใช้งานเป็น `LittleFS` หาต้องการใช้งาน SPIFFS
+  ให้ `Declare Macro` ไว้เหนือการ Include Magellan SDK ดังนี้
+  ```cpp
+  #include <Arduino.h>
+  #define MG_USE_SPIFFS
+  #include <MAGELLAN_MQTT.h>
+  ```
+ 
+ * `Interval timer` 
+   * `magel.interval(unsigned int second, []() { function here })` ใช้กำหนดช่วงเวลาให้ Function ที่ประกาศภายใน Interval ทำงานในแต่ละรอบโดยมีหน่วยเป็น Second    
+     ### ⚠️ `magel.interval` ใน 1 loop function timer ใช้ได้แค่ 1 อันเท่านั้นหากใช้งานมากกว่า 1 function จะทำงานแค่บรรทัดที่เขียนไว้ล่างสุด.
+>ℹ️ Information`Function "Interval" เป็น Function optional เท่านั้น สามารถใช้ function timer ทดแทนได้`
  
  * `Interval timer` 
    * `magel.interval(unsigned int second, []() { function here })` ใช้กำหนดช่วงเวลาให้ Function ที่ประกาศภายใน Interval ทำงานในแต่ละรอบโดยมีหน่วยเป็น Second   
@@ -224,7 +251,8 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
    * `.setDuration(unsigned int duration)`
    * `.generateMsgId()`
 
->⚠️ Warning`หากมีการเปิดใช้งาน enabled retransmit ด้วย setEnabled จะมีการ report จนกว่าจะได้ Response, msgId โดยทุกๆ duration และ repeat ที่ตั้งค่าไว้ซึ่งจะใช้เวลาในการทำงาน เนื่องจากต้องรอการตอบกลับ ทั้งนี้ขึ้นอยู่กับคุณภาพของสัญญาณของ network connection ของอุปกรณ์แต่สามารถมั่นใจได้ว่า message ของที่ส่งไปถึงหรือไม่ หรือในกรณีผิดพลาดสามารถ track ได้จากจาก`[Status code](https://magellan.ais.co.th/api-document/3/3) 
+>⚠️ Warning`หากมีการเปิดใช้งาน enabled retransmit ด้วย setEnabled จะมีการ report จนกว่าจะได้ Response, msgId โดยทุกๆ duration และ repeat ที่ตั้งค่าไว้ซึ่งจะใช้เวลาในการทำงาน เนื่องจากต้องรอการตอบกลับ ทั้งนี้ขึ้นอยู่กับคุณภาพของสัญญาณของ network connection ของอุปกรณ์แต่สามารถมั่นใจได้ว่า message ของที่ส่งไปถึงหรือไม่ หรือในกรณีผิดพลาดสามารถ track ได้จากจาก`[Status code](https://enterprise-magellan.ais.co.th/learningcenter/api-document/mqtt-apis-v2#response-status-codes) 
+
 
 # วิธีใช้งาน Report with message id ด้วย RetransmitSetting [เพิ่มเติม](#retransmitStructor)
 ```cpp
@@ -318,7 +346,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
     connectWiFi(WiFiSetting);
     setting.ThingIdentifier = "123441023449232XXX";
     setting.ThingSecret = "14912559924224242XXX";
-    setting.endpoint = "magellan.ais.co.th"; //if not set *default: magellan.ais.co.th
+    setting.endpoint = "device-entmagellan.ais.co.th"; //if not set *default: device-entmagellan.ais.co.th
     setting.clientBufferSize = defaultOTAbuffer; // if not set *default: 1024
     magel.begin(setting);
     //* callback getControl
@@ -331,7 +359,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
   }
 ```
 * `หลังจาก decleare function callback getControl มาแล้วไม่ว่าจะ format 'JSON' หรือ 'Plaintext' ก็ตามหากทำการ triger control จาก widget บน platform เพื่อให้อุปกรณ์ได้รับค่า control แต่ตัวอุปกรณ์เกิด disconnect หรือปัญหาที่ไม่ได้รับ message value ทัน event นั้นๆ สามารถเรียกขอค่า control ที่ค้างหรือยังไม่ได้ Acknowledge ได้ดังนี้`
->ℹ️ Information`หากทำการ Request control แล้วไม่มีค่าค้างอยู่ค่าที่จะได้รับเข้ามาใน Callback getControl จะมีแค่ code 40400 หากมีค้างอยู่จะได้รับ code 20000  และ value control` [Status code](https://magellan.ais.co.th/api-document/3/3)
+>ℹ️ Information`หากทำการ Request control แล้วไม่มีค่าค้างอยู่ค่าที่จะได้รับเข้ามาใน Callback getControl จะมีแค่ code 40400 หากมีค้างอยู่จะได้รับ code 20000  และ value control` [Status code](https://enterprise-magellan.ais.co.th/learningcenter/api-document/mqtt-apis-v2#response-status-codes)
 # วิธีการ Request control value ที่ค้างอยู่ (ยังไม่ได้รับการ Acknowledge จากอุปกรณ์) 
 ```cpp
    void loop()
@@ -374,7 +402,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
     connectWiFi(WiFiSetting);
     setting.ThingIdentifier = "123441023449232XXX";
     setting.ThingSecret = "14912559924224242XXX";
-    setting.endpoint = "magellan.ais.co.th"; //if not set *default: magellan.ais.co.th
+    setting.endpoint = "device-entmagellan.ais.co.th"; //if not set *default: device-entmagellan.ais.co.th
     magel.begin(setting);
     magel.clientConfig.add("location", "15.0000, 58.0000"); //* update location once after connect platform
     magel.clientConfig.add("battery", 100); //* update battery level once after connect platform
@@ -413,7 +441,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
     connectWiFi(WiFiSetting);
     setting.ThingIdentifier = "123441023449232XXX";
     setting.ThingSecret = "14912559924224242XXX";
-    setting.endpoint = "magellan.ais.co.th"; //if not set *default: magellan.ais.co.th
+    setting.endpoint = "device-entmagellan.ais.co.th"; //if not set *default: "device-entmagellan.ais.co.th"
     magel.begin(setting);
     magel.getResponse(UNIXTIME, [](EVENTS events) 
     { //* for get unixTime from magellan
@@ -573,6 +601,5 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
      * [manualUpdate](examples/example_MQTT/OTA/manualUpdate/manualUpdate.ino) - ตัวอย่างการกำหนดให้อุปกรณ์ทำการอัพเดท Firmware ตามที่ผู้ใช้งานกำหนดเอง
      * [utilityInformation](examples/example_MQTT/OTA/utilityInformation/utilityInformation.ino) - ตัวอย่างการอ่านค่าข้อมูลการ OTA
 >⚠️ Warning `ข้อควรระวังในการใช้งาน OTA ด้วยบอร์ด ESP8266 จำเป็นจะต้องทดสอบ Binary file (.bin) ของ firmware ก่อนใช้งาน OTA จริงเสมอเนื่องจากหาก Build Binary file (.bin) จากคนละบอร์ดเช่นใช้ binary file ของ ESP32 มาใช้ OTA เข้ายังบอร์ด ESP8266 อาจจะทำให้ firmware ดั่งเดิมที่ใช้งานได้เสียหายและไม่สามารถทำงานต่อได้จำเป็นต้องแก้ไขด้วยการ erase flash หรือ upload firmware ใหม่ผ่านสายเชื่อมโดยตรงแทน *แต่ในบน ESP32 ตัว standard library ได้มีการ validate board ใน Binary file ที่จะ OTA มาแล้วในระดับหนึ่ง แต่ทั้งนี้ก็ควรจะทดสอบก่อนใช้งาน OTA จริงเสมอเผื่อให้แน่ใจว่า firmware ใหม่ที่ OTA เข้าไปมีความเสถียรภาพพร้อมใช้งาน`
-
 
 
