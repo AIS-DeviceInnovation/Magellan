@@ -95,6 +95,10 @@ func_callback_registerList MAGELLAN_MQTT_device_core::duplicate_subs_list;
 boolean attemp_download_1 = false;
 boolean attemp_download_2 = false;
 
+// 1.2.1
+unsigned long Attribute_MQTT_core::refPercentOTA = 0;
+bool Attribute_MQTT_core::flagPrintProgressOTA = false;
+
 String b2str(byte *payload, unsigned int length) // convert byte* to String
 {
   char buffer_payload[length + 1] = {0};
@@ -640,6 +644,21 @@ void validate_lostOTA_Data_incoming()
   }
 }
 
+//v1.2.1
+void updatePercentProgressOTA(unsigned int percent)
+{
+  if (percent % 10 == 0 && percent <= 100 && attr.refPercentOTA != percent)
+  {
+    attr.flagPrintProgressOTA = true;
+    attr.refPercentOTA = percent;
+  }
+  if (!attr.flagPrintProgressOTA)
+    return;
+  String msgProgress = "{\"description\":\"["+String(percent)+"%] FW: " + MAGELLAN_MQTT_device_core::OTA_info.firmwareVersion +"\"}";
+  pub_UpdateProgress("DOWNLOADING", msgProgress);
+  attr.flagPrintProgressOTA = false;
+}
+
 void updateFirmware(uint8_t *data, size_t len)
 {
   Update.write(data, len);
@@ -649,6 +668,7 @@ void updateFirmware(uint8_t *data, size_t len)
   unsigned int buffer_crrSize = attr.current_size;
   unsigned int calc_percent = map(buffer_crrSize, 0, attr.fw_total_size, 0, 100);
   Serial.println("# <-Current firmware size: " + String(buffer_crrSize) + "/" + String(attr.fw_total_size) + " => [" + String(calc_percent) + " %]");
+  updatePercentProgressOTA(calc_percent); 
   validate_lostOTA_Data_incoming();
   if (attr.current_size != attr.fw_total_size)
   {
@@ -1545,7 +1565,7 @@ void MAGELLAN_MQTT_device_core::begin(String _client_id, uint16_t bufferSize)
   Serial.println("=================== Begin MAGELLAN Library  " + String(lib_version) + " ===================");
   delay(5000);
   String _host = _host_production;
-  
+
   this->host = _host;
   this->port = mgPort;
   this->client_id = _client_id;
