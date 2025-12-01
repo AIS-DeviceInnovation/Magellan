@@ -1644,10 +1644,6 @@ void MAGELLAN_MQTT::subscribesHandler(func_callback_registerList cb_onConnected)
 {
   duplicate_subs_list = [&]
   {
-    if (cb_onConnected != NULL)
-    {
-      cb_onConnected();
-    }
     attr.sub_check_list.GetSubList();
     if (attr.ext_Token != "" && attr.ext_Token.length() > 30)
     {
@@ -1698,6 +1694,11 @@ void MAGELLAN_MQTT::subscribesHandler(func_callback_registerList cb_onConnected)
         {
           coreMQTT->registerResponseReportTimestamp();
         }
+      }
+
+      if (cb_onConnected != NULL)
+      {
+        cb_onConnected();
       }
       // else
       // {
