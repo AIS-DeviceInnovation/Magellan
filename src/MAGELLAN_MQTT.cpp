@@ -25,8 +25,17 @@ support esp32, esp8266
 
 Author:(POC Device Magellan team)
 Create Date: 25 April 2022.
-Modified: 22 may 2023.
+Modified: 22 dec 2025.
 */
+
+/*
+ * This file includes code from TinyGSM
+ * Copyright (c) 2016-2024 Volodymyr Shymanskyy
+ * Licensed under LGPL-3.0-or-later
+ *
+ * Modifications:
+ *  - Adapted for AIS 4G Board
+ */
 
 #include "MAGELLAN_MQTT.h"
 
@@ -42,7 +51,7 @@ struct JsonDocUtils
 JsonDocUtils readSafetyCapacity_Json_doc(JsonDocument &ref_docs);
 
 MAGELLAN_MQTT_device_core *MAGELLAN_MQTT::coreMQTT = NULL;
-Setting setting;
+Magellan_Setting setting;
 
 MAGELLAN_MQTT::MAGELLAN_MQTT(Client &_Client)
 {
@@ -59,7 +68,12 @@ void MAGELLAN_MQTT::reconnect()
   coreMQTT->reconnect();
 }
 
-void MAGELLAN_MQTT::begin(Setting _setting)
+void MAGELLAN_MQTT::disconnect()
+{
+  coreMQTT->disconnect();
+}
+
+void MAGELLAN_MQTT::begin(Magellan_Setting _setting)
 {
 #ifdef BYPASS_REQTOKEN
   if (_setting.ThingToken != "null" && _setting.ThingToken.length() > 25)
@@ -68,7 +82,8 @@ void MAGELLAN_MQTT::begin(Setting _setting)
   }
   else
   {
-    Serial.print(F("# Invalid setting ThingToken"));
+    Serial.println(F("# Invalid setting ThingToken"));
+    Serial.println(F("# Define \"BYPASS_REQTOKEN\" but not setting ThingToken manual back into auto renew ThingToken mode"));
   }
 #endif
 
@@ -123,27 +138,6 @@ void MAGELLAN_MQTT::begin(Setting _setting)
   }
 }
 
-void MAGELLAN_MQTT::begin(String _thingIden, String _thingSecret, String _imei, uint16_t bufferSize)
-{
-  _thingIden.trim();
-  _thingSecret.trim();
-  String t_iden = _thingIden;
-  String t_sect = _thingSecret;
-
-  _imei.trim();
-
-  credentialFile.initCredentialFile();
-
-  if (t_iden == "null" || t_sect == "null")
-  {
-    Serial.println(F("# Get credential in filesystem"));
-    t_iden = this->credential.getThingIdentifier();
-    t_sect = this->credential.getThingSecret();
-  }
-  this->coreMQTT->begin(t_iden, t_sect, _imei, bufferSize);
-  coreMQTT->activeOTA(attr.calculate_chunkSize, true);
-}
-
 void MAGELLAN_MQTT::beginCustom(String _thingIden, String _thingSecret, String _imei, String _host, int _port, uint16_t bufferSize)
 {
   _thingIden.trim();
@@ -168,6 +162,12 @@ void MAGELLAN_MQTT::beginCustom(String _thingIden, String _thingSecret, String _
 
 void MAGELLAN_MQTT::loop()
 {
+#if defined(USE_4G_BOARD) || defined(USE_AIS_4G_BOARD)
+  if (this->modem4Gmode)
+  {
+    this->HandleModem();
+  }
+#endif
   this->coreMQTT->loop();
   if (attr.flagAutoOTA)
     this->coreMQTT->handleOTA(true);
@@ -181,6 +181,11 @@ void MAGELLAN_MQTT::loop()
 void MAGELLAN_MQTT::heartbeat(unsigned int second)
 {
   this->coreMQTT->heartbeat(second * 1000);
+}
+
+void MAGELLAN_MQTT::heartbeat()
+{
+  this->coreMQTT->heartbeat();
 }
 
 String MAGELLAN_MQTT::deserializeControl(String payload)
@@ -321,6 +326,7 @@ ResultReport MAGELLAN_MQTT::Report::sendWithMsgId(String payload, int msgId)
   Serial.println("# [Sensors]: " + payload);
   return internalResult;
 }
+
 ResultReport MAGELLAN_MQTT::Report::sendWithMsgId(String reportKey, String reportValue, int msgId)
 {
   int len = reportValue.length();

@@ -98,6 +98,16 @@ boolean attemp_download_2 = false;
 // 1.2.1
 unsigned long Attribute_MQTT_core::refPercentOTA = 0;
 bool Attribute_MQTT_core::flagPrintProgressOTA = false;
+bool firstHBdoing = true;
+
+typedef struct
+{
+  String endPoint_IP;
+  String endPoint_DOMAIN;
+  String endPoint_PORT;
+} Centric;
+
+Centric _centric;
 
 String b2str(byte *payload, unsigned int length) // convert byte* to String
 {
@@ -828,6 +838,12 @@ void msgCallback_internalHandler(char *topic, byte *payload, unsigned int length
   String key = "null"; // if this topic is'nt PLAINTEXT
   String code = "0";
   int _MsgId = -1;
+#ifdef INTERNAL_MQTT_DEBUG
+  Serial.println(F("-------------------------------"));
+  Serial.println("# Incoming Topic: " + b_topic);
+  Serial.println("# Incoming Payload: " + _payload);
+  Serial.println(F("-------------------------------"));
+#endif
 
   EVENTS intern_EVENT;
   intern_EVENT.RESP = "EMPTY";
@@ -1305,6 +1321,20 @@ MAGELLAN_MQTT_device_core::MAGELLAN_MQTT_device_core(Client &c)
   this->client = *&attr.mqtt_client;
 }
 
+MAGELLAN_MQTT_device_core::MAGELLAN_MQTT_device_core()
+{
+
+  prev_time = 0;
+  now_time = millis();
+  HB_prev_time = 0;
+  HB_now_time = millis();
+
+  // Client *newClient = &c;
+  // attr.ClientNET = *&newClient;
+  // attr.mqtt_client = new PubSubClient(*attr.ClientNET);
+  // this->client = *&attr.mqtt_client;
+}
+
 String MAGELLAN_MQTT_device_core::getHostName()
 {
   return this->host;
@@ -1331,13 +1361,17 @@ void MAGELLAN_MQTT_device_core::setAuthMagellan(String _thingIden, String _thing
     while (true)
     {
       Serial.print(".");
-      delay(300);
-      this->cnt_fail++;
+      delay(100);
+      cnt_fail++;
       if (cnt_fail >= 100) // timeout Restart board 30 sec
       {
         ESP.restart();
       }
     }
+  }
+  else
+  {
+    Serial.println(F("# Setting Magellan Authentication Success"));
   }
   this->thingIden = _thingIden;
   this->thingSecret = _thingSecret;
@@ -1346,6 +1380,7 @@ void MAGELLAN_MQTT_device_core::setAuthMagellan(String _thingIden, String _thing
 
 String MAGELLAN_MQTT_device_core::readToken()
 {
+  this->token = attr.ext_Token;
   return this->token;
 }
 
@@ -1452,6 +1487,14 @@ void MAGELLAN_MQTT_device_core::reconnect()
   }
 }
 
+void MAGELLAN_MQTT_device_core::disconnect()
+{
+  if (this->client->connected())
+  {
+    this->client->disconnect();
+  }
+}
+
 void MAGELLAN_MQTT_device_core::acceptToken(String payload)
 {
   if (payload.length() >= 36)
@@ -1516,7 +1559,7 @@ void MAGELLAN_MQTT_device_core::reconnectMagellan()
       {
         Serial.println(F("# Please check the thing device is activated "));
       }
-      delay(5000);
+      delay(3000);
       recon_attempt++;
       Serial.print(F("# attempt connect on :"));
       Serial.println(String(recon_attempt) + " times");
@@ -1547,7 +1590,7 @@ void MAGELLAN_MQTT_device_core::beginCustom(String _client_id, String _host, int
 {
   Serial.println("=================== Begin MAGELLAN Library  " + String(lib_version) + " ===================");
 
-  delay(5000);
+  delay(2000);
   this->host = _host;
   this->port = _port;
   this->client_id = _client_id;
@@ -1585,7 +1628,7 @@ void MAGELLAN_MQTT_device_core::begin(String _thingIden, String _thingSecret, St
   Serial.print(F("IMEI: "));
   Serial.println(_imei);
   if (_thingIden != NULL && _thingSecret != NULL)
-    begin(_thingIden, bufferSize);
+    initMQTTClient(_thingIden, bufferSize);
   else
   {
     Serial.println(F("# ThingIdentifier or ThingSecret is incorrect please check"));
@@ -1596,13 +1639,12 @@ void MAGELLAN_MQTT_device_core::begin(String _thingIden, String _thingSecret, St
   }
 }
 
-void MAGELLAN_MQTT_device_core::begin(String _client_id, uint16_t bufferSize)
+void MAGELLAN_MQTT_device_core::initMQTTClient(String _client_id, uint16_t bufferSize)
 {
   Serial.println("=================== Begin MAGELLAN Library  " + String(lib_version) + " ===================");
-  delay(5000);
-  String _host = _host_production;
+  delay(2000);
 
-  this->host = _host;
+  this->host = _host_production;
   this->port = mgPort;
   this->client_id = _client_id;
   if (bufferSize > _default_OverBufferSize)
@@ -1781,17 +1823,15 @@ boolean MAGELLAN_MQTT_device_core::heartbeat()
   return Pub_status;
 }
 
-boolean firstHBdoing = true;
 void MAGELLAN_MQTT_device_core::heartbeat(unsigned int triger_ms)
 {
   HB_threshold_ms = triger_ms;
-  HB_now_time = millis();
-  unsigned long different_ms = HB_now_time - HB_prev_time;
+  unsigned long different_ms = millis() - HB_prev_time;
   if (different_ms >= HB_threshold_ms || firstHBdoing)
   {
     firstHBdoing = false;
     heartbeat();
-    HB_prev_time = HB_now_time;
+    HB_prev_time = millis();
   }
 }
 
@@ -2281,8 +2321,7 @@ boolean firstTimedoing = true;
 void MAGELLAN_MQTT_device_core::interval_ms(unsigned long ms, func_callback_ms cb_ms)
 {
   threshold_ms = ms;
-  now_time = millis();
-  unsigned long different_ms = now_time - prev_time;
+  unsigned long different_ms = millis() - prev_time;
   if (different_ms >= threshold_ms || firstTimedoing)
   {
     firstTimedoing = false;
@@ -2854,3 +2893,166 @@ boolean MAGELLAN_MQTT_device_core::unregisterResponseHeartbeat(int format)
   return Sub_status;
 }
 ////////////////// Unsub //////////
+
+boolean MAGELLAN_MQTT_device_core::acceptEndPoint(String payload)
+{
+  boolean acceptStatus = false;
+  if (payload.length() >= 10)
+  {
+    const char *buff_payload = payload.c_str();
+    JsonObject getCetric = deJson(buff_payload);
+
+    String buf1 = getCetric["ServerDestinationInfo"];
+    String buf2 = getCetric["OperationStatus"];
+    // Serial.println("buf1 :"+ buf1);
+    if (buf2.indexOf("20000") != -1)
+    {
+      JsonObject getCetric2 = deJson(buf1);
+      String buff_ip = getCetric2["ServerIP"];
+      String buff_domain = getCetric2["ServerDomain"];
+      String buff_port = getCetric2["ServerPort"];
+      _centric.endPoint_DOMAIN = buff_domain;
+      _centric.endPoint_IP = buff_ip;
+      _centric.endPoint_PORT = buff_port;
+      acceptStatus = true;
+      Serial.println(F("## NEW ZONE AVAILABLE #######"));
+      Serial.println("# Centric IP >>: " + _centric.endPoint_IP);
+      Serial.println("# Centric Domain >>: " + _centric.endPoint_DOMAIN);
+      Serial.println("# Centric Port >>: " + String(_centric.endPoint_PORT));
+      Serial.println(F("#############################"));
+      cnt_attempt = 0;
+    }
+    else
+    {
+      Serial.println(F("# Fail to Get Endpoint form centric"));
+      Serial.println(F("# Please check the thing device is activated"));
+      Serial.print(F("# response: "));
+      Serial.println(payload);
+    }
+  }
+  return acceptStatus;
+}
+
+boolean MAGELLAN_MQTT_device_core::requestEndpoint()
+{
+  boolean Pub_status = false;
+  if (!flagGetEndPoint)
+  {
+    if (cnt_attempt >= limit_attempt)
+    {
+      Serial.println("Device Attempt to request ENDPOINT more than " + String(limit_attempt) + " time. restart board");
+      delay(1000);
+      ESP.restart();
+    }
+    if (millis() - previouseMillis > 10000)
+    {
+      previouseMillis = millis();
+      String topic = "api/v2/things/" + thingIden + "/" + thingSecret + "/server/destination/request";
+      Pub_status = this->client->publish(topic.c_str(), " ");
+      _debug = (Pub_status == true) ? "Success" : "Failure";
+      Serial.print("# Request Endpoint: " + _debug);
+      if (cnt_attempt > 0)
+      {
+        Serial.print(" Attempt >> " + String(cnt_attempt - 1) + " time");
+      }
+      Serial.println();
+      cnt_attempt++;
+    }
+  }
+  return Pub_status;
+}
+
+void MAGELLAN_MQTT_device_core::getEndPoint()
+{
+  Serial.println(F("# REQUEST ENDPOINT"));
+  while (!flagRegisterEndPoint)
+  {
+    String topic = "api/v2/things/" + this->thingIden + "/" + this->thingSecret + "/server/destination/response";
+    this->flagRegisterEndPoint = this->client->subscribe(topic.c_str());
+    Serial.println("# Register destination server: " + String(flagRegisterEndPoint));
+  }
+  while (!flagGetEndPoint)
+  {
+    this->client->loop();
+    // Serial.println("Pub");
+    this->requestEndpoint();
+    if (attr.ext_EndPoint.length() >= 10)
+    {
+      // Serial.println(attr.ext_EndPoint);
+      flagGetEndPoint = this->acceptEndPoint(attr.ext_EndPoint);
+    }
+    // delay(5000);
+    for (int i = 0; i < 5000; i++)
+    {
+      this->client->loop();
+      delay(1);
+    }
+  }
+  if (flagGetEndPoint)
+  {
+    Serial.println(F("# Disconnect from Centric"));
+    this->client->disconnect();
+    Serial.println(F("# Connect to new zone"));
+    srand(time(NULL));
+    int randnum = rand() % 10000;   // generate number concat in Client id
+    int randnum_2 = rand() % 10000; // generate number concat in Client id
+    String client_idBuff = client_id + "_" + String(randnum) + "_" + String(randnum_2);
+    this->beginCustom(client_idBuff, _centric.endPoint_IP, (_centric.endPoint_PORT).toInt(), this->_default_bufferSize);
+  }
+}
+
+void MAGELLAN_MQTT_device_core::magellanCentric()
+{
+  if (!isConnected())
+  {
+    while (!isConnected())
+    {
+      srand(time(NULL));
+      int randnum = rand() % 10000;   // generate number concat in Client id
+      int randnum_2 = rand() % 10000; // generate number concat in Client id
+      this->client_id = "Centric_" + this->thingIden;
+      String client_idBuff = client_id + "_" + String(randnum) + "_" + String(randnum_2);
+      Serial.println(F("#Attempting connection ..."));
+      this->host = _host_centric;
+      this->port = mgPort; // auto_assigned Client ID with ThingIdent
+      this->client->setBufferSize(this->_default_bufferSize);
+      this->setCallback_msgHandle();
+      this->client->setServer(_host_centric, mgPort);
+      Serial.println("Connecting Magellan on: " + String(this->host) + ", Port: " + String(this->port));
+      String thisIdenCentric = "Centric." + this->thingIden;
+      if (this->client->connect(client_idBuff.c_str(), thisIdenCentric.c_str(), this->thingSecret.c_str()))
+      {
+        Serial.println("Client id : " + client_idBuff + " is connected");
+        recon_attempt = 0;
+      }
+
+      else
+      {
+        Serial.print(F("failed, reconnect ="));
+        Serial.print(this->client->state());
+        Serial.println(F(" try again in 5 seconds"));
+        Serial.print(F("Count Attemp Reconnect: "));
+        recon_attempt++;
+        Serial.println(recon_attempt);
+        delay(5000);
+        if (recon_attempt >= MAXrecon_attempt)
+        {
+          Serial.println(" attempt to connect more than: " + String(MAXrecon_attempt) + " Restart Board");
+          ESP.restart();
+        }
+      }
+    }
+    getEndPoint();
+  }
+}
+
+// void MAGELLAN_MQTT_device_core::beginCentric()
+// {
+//   Serial.println("=================== Begin MAGELLAN Library [AIS 4G Board] " + String(lib_version) + " ===================");
+//   Serial.println(F("# Connect to Centric"));
+//   delay(1000);
+//   this->host = _host_centric;
+//   this->port = mgPort;// auto_assigned Client ID with ThingIdent
+//   setBufferSize(_default_bufferSize);
+//   magellanCentric(_host_centric, mgPort);
+// }

@@ -73,10 +73,8 @@ Modified: 22 may 2023.
 #define mgPort 1883
 // for define mode Timestamp
 #define SET_UNIXTS 0
-// #define SET_UTC 1
 
-// #define Production 1
-
+#define _host_centric "centric-magellan.ais.co.th"
 #define _host_production "device-entmagellan.ais.co.th"
 
 enum class OTA_state
@@ -103,7 +101,6 @@ typedef struct
 typedef struct
 {
   boolean isReadyOTA = false;
-  // int firmwareIsUpToDate = -1; // -1 unknow, 0 out of date, 1 up to date
   OTA_state firmwareIsUpToDate = OTA_state::UNKNOWN_STATE; // -1 unknow, 0 out of date, 1 up to date
   boolean inProcessOTA = false;
   unsigned int firmwareTotalSize = 0;
@@ -131,14 +128,13 @@ typedef std::function<void(void)> func_callback_ms;
 class MAGELLAN_MQTT_device_core
 {
 public:
-  MAGELLAN_MQTT_device_core() {};
-  MAGELLAN_MQTT_device_core(Client &c); // for customize client internet interface
-  boolean flagToken = false;
-  String client_id;
+  MAGELLAN_MQTT_device_core();
+  MAGELLAN_MQTT_device_core(Client &c);                                                // for customize client internet interface
   void setAuthMagellan(String _thingIden, String _thingSecret, String _imei = "none"); // add on
-  void begin(String _thingIden, String _thingSencret, String _imei, uint16_t bufferSize = 1024);
+  void begin(String _thingIden, String _thingSencret, String _imei, uint16_t bufferSize = defaultOTABuffer);
   void beginCustom(String _client_id, String _host, int _port, uint16_t bufferSize); //
-  void begin(String _client_id, uint16_t bufferSize = 1024);                         //
+  void initMQTTClient(String _client_id, uint16_t bufferSize = defaultOTABuffer);    //
+  void magellanCentric();
 
   String getHostName(); //
   String readToken();
@@ -242,17 +238,20 @@ public:
   static OTA_INFO OTA_info;
   static func_callback_registerList duplicate_subs_list; // ver.1.1.0
 
-  void reconnect(); // add on
+  void reconnect();  // add on
+  void disconnect(); // add on
+  void setCallback_msgHandle();
 
 private:
-  int _default_bufferSize = 1024;
-
+  int _default_bufferSize = _default_OverBufferSize;
+  boolean flagToken = false;
+  String client_id;
   void checkConnection();                                          //
   void thingRegister();                                            //
   void acceptToken(String payload);                                //
   boolean setBufferSize(uint16_t size);                            //  default 256 (uplink 128 + downlink 128)
   String byteToString(byte *payload, unsigned int length_payload); // convert byte* to string
-  void setCallback_msgHandle();
+  // void setCallback_msgHandle();
   unsigned long previouseMillis = 0; //
   boolean flagRegisterToken = false; //
   boolean flagAuthMagellan = false;
@@ -260,10 +259,18 @@ private:
   boolean registerToken();  //
   boolean requestToken();   //
   void reconnectMagellan(); //
-  int limit_attempt = 11;   // 11 -> for atempt 10 request token
-  int cnt_attempt = 0;      //
+
+  boolean flagRegisterEndPoint = false; //
+  boolean flagGetEndPoint = false;      //
+  void getEndPoint();
+  boolean requestEndpoint();
+  boolean acceptEndPoint(String payload);
+
+  const int limit_attempt = 11; // 11 -> for atempt 10 request token
+  int cnt_attempt = 0;          //
   int recon_attempt = 0;
   int MAXrecon_attempt = 10;
+
   unsigned long prev_time = 0;
   unsigned long now_time;
   unsigned long threshold_ms;

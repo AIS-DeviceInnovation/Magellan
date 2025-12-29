@@ -2,7 +2,7 @@
 library version: v2.5.3
 Author:Worawit Sayned (POC Device Magellan team)
 Create Date: 25 April 2022.
-Modified: 3 may 2023.
+Modified: 16 dec 2025.
 Released for private usage.
 */
 #ifndef ATTRIBUTE_CORE_H
@@ -27,9 +27,13 @@ Released for private usage.
 #include "LittleFS.h"
 #endif
 
+// #if defined(ESP8266) && defined(USE_AIS_4G_BOARD)
+// #error "Please remove macro \"USE_AIS_4G_BOARD\". ESP8266 is not support using AIS 4G Board(ESP32)."
+// #endif
+
 #define _major_ver 1
-#define _feature_ver 2
-#define _enhance_ver 2
+#define _feature_ver 3
+#define _enhance_ver 0
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -69,7 +73,7 @@ public:
   static String ext_Token;
   static String ext_EndPoint;
   static Client *ClientNET;
-  static PubSubClient *mqtt_client; // MQTT Client
+  static PubSubClient *mqtt_client; 
   static unsigned int fw_count_chunk;
   static unsigned int fw_total_size;
   static unsigned int chunk_size;
@@ -81,12 +85,9 @@ public:
   static size_t calculate_chunkSize;
   static boolean inProcessOTA;
   static boolean startReqDownloadOTA;
-  // static String sensorJSON_str;
-  // static String clientConfigJSON_str;
   static StaticJsonDocument<512> docClientConf;
   static DynamicJsonDocument *adjDoc;
   static DynamicJsonDocument *docSensor;
-  // 1.1.0
   static boolean checkUpdate_inside;
   static unsigned int delayCheckUpdate_inside;
   static unsigned int delayRequest_download;
@@ -96,14 +97,9 @@ public:
   static int matchMsgId_send;
   static int maxRetransmit;
   static unsigned int durationRetransmit;
-  // @attention 0 = not register cb, 1 register json, 2 register plaintext, 3 register both
-  static boolean isMatchMsgId;
+  static boolean isMatchMsgId;  
   static boolean reqRetransmit;
-
-  // 1.1.2
   static SubscribesCheckLists sub_check_list;
-
-  //1.2.1
   static unsigned long refPercentOTA;
   static bool flagPrintProgressOTA;
 };

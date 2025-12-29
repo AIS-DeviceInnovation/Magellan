@@ -25,8 +25,19 @@ support esp32, esp8266
 
 Author:(POC Device Magellan team)
 Create Date: 25 April 2022.
-Modified: 22 may 2023.
+Modified: 22 dec 2025.
 */
+
+/*
+ * This file includes code from TinyGSM
+ * Copyright (c) 2016-2024 Volodymyr Shymanskyy
+ * Licensed under LGPL-3.0-or-later
+ *
+ * Modifications:
+ *  - Adapted for AIS 4G Board
+ */
+
+
 #ifndef MAGELLAN_MQTT_H
 #define MAGELLAN_MQTT_H
 
@@ -39,7 +50,7 @@ Modified: 22 may 2023.
 
 #endif
 
-struct Setting
+struct Magellan_Setting
 {
   String ThingIdentifier = "null";
   String ThingSecret = "null";
@@ -50,6 +61,7 @@ struct Setting
   String ThingToken = "null";
 #endif
 };
+extern Magellan_Setting setting;
 
 struct RetransmitSetting
 {
@@ -93,8 +105,6 @@ struct RetransmitSetting
   }
 };
 
-extern Setting setting;
-// ver.1.1.0
 typedef std::function<void(void)> cb_on_disconnect;
 
 typedef struct
@@ -107,6 +117,7 @@ class MAGELLAN_MQTT : private MAGELLAN_MQTT_device_core
 {
 private:
   void checkUpdate_inside();
+  void beginCustom(String _thingIden, String _thingSencret, String _imei, String _host = _host_production, int _port = mgPort, uint16_t bufferSize = defaultBuffer);
   // 1.1.1
 #ifdef BYPASS_REQTOKEN
   void setManualToken(String token_);
@@ -114,12 +125,12 @@ private:
 public:
   MAGELLAN_MQTT(Client &_Client);
   boolean isConnected();
-  void reconnect();
-  void begin(Setting _setting = setting);
-  void begin(String _thingIden, String _thingSencret, String _imei, uint16_t bufferSize = defaultBuffer);
-  void beginCustom(String _thingIden, String _thingSencret, String _imei, String _host = _host_production, int _port = mgPort, uint16_t bufferSize = defaultBuffer);
-  void loop();
+  virtual void reconnect();
+  void disconnect();
+  void begin(Magellan_Setting _setting = setting);
+  virtual void loop();
   void heartbeat(unsigned int second);
+  void heartbeat();
   void subscribes(func_callback_registerList cb_subscribe_list);
   // 1.1.2
   void subscribesHandler(func_callback_registerList cb_onConnected = NULL); // auto Subscribe
@@ -216,7 +227,6 @@ public:
     void request();
     void request(String controlKey);
     boolean ACK(String controlKey, String controlValue);
-
     boolean ACK(String controls);
   } control;
 
@@ -343,6 +353,4 @@ public:
 protected:
   static MAGELLAN_MQTT_device_core *coreMQTT;
 };
-
-extern Setting setting;
 #endif
