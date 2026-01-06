@@ -48,6 +48,7 @@ Modified: 22 dec 2025.
 #include <Update.h>
 #define USE_AIS_4G_BOARD // Must be defined before including TinyGSM
 #include "utils/TinyGSM/src/TinyGsmClient.h"
+#include "utils/BuiltInSensorsModule.h"
 #define PIN_MODEM_TX 13
 #define PIN_MODEM_RX 14
 #define PIN_MODEM_PWR 12
@@ -61,11 +62,15 @@ class MAGELLAN_MQTT_4G_BOARD : public MAGELLAN_MQTT
 {
 public:
   MAGELLAN_MQTT_4G_BOARD();
-  void initSerialModem();
   void powerModem();
+  void initSerialModem();
   void connectModem();
+
   void checkModem();
-  void HandleModem();
+  void HandleModem(); // handle modem connection and reconnect mqtt when ppp connected
+  void InitGSM();     // initialize GSM modem is using function above running by correctly sequence.
+  TinyGsmClient &getGSMClient();
+  TinyGsm &getGSMModem();
 
   void begin(Magellan_Setting _setting = setting);
   void disconnect();
@@ -77,11 +82,33 @@ public:
   public:
     void begin(Magellan_Setting _setting = setting);
     MAGELLAN_MQTT_4G_BOARD *parent;
-  private:
 
+  private:
   } centric;
 
+  struct GPS_utils
+  {
+  public:
+    MAGELLAN_MQTT_4G_BOARD *parent;
+
+    void Init();
+    void Standby();
+    boolean available();
+    float readLatitude();
+    float readLongitude();
+    float readAltitude();
+    float readSpeed();
+    float readCourse();
+    String readLocation();
+    unsigned long getUnixTime();
+    GPS_Data getCurrentGPSData(); 
+  private:
+    GPS_SIM7600E gps_internal;
+    GPS_Data _gpsData;
+  } gps;
+
 private:
+
 protected:
 };
 #endif

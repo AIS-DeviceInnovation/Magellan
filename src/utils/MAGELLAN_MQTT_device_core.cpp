@@ -32,7 +32,7 @@ Modified: 22 may 2023.
 
 String Attribute_MQTT_core::statusActivateCode = "null";
 StaticJsonDocument<512> intern_docJSON;
-boolean Attribute_MQTT_core::isBypassAutoUpdate = false; // false = autoUpdate, true = unuse autoUpdate
+// boolean Attribute_MQTT_core::isBypassAutoUpdate = false; // false = autoUpdate, true = unuse autoUpdate
 boolean Attribute_MQTT_core::isFirmwareUptodate = false;
 boolean Attribute_MQTT_core::checkFirmwareUptodate = false;
 boolean Attribute_MQTT_core::usingCheckUpdate = false;
@@ -3045,14 +3045,3 @@ void MAGELLAN_MQTT_device_core::magellanCentric()
     getEndPoint();
   }
 }
-
-// void MAGELLAN_MQTT_device_core::beginCentric()
-// {
-//   Serial.println("=================== Begin MAGELLAN Library [AIS 4G Board] " + String(lib_version) + " ===================");
-//   Serial.println(F("# Connect to Centric"));
-//   delay(1000);
-//   this->host = _host_centric;
-//   this->port = mgPort;// auto_assigned Client ID with ThingIdent
-//   setBufferSize(_default_bufferSize);
-//   magellanCentric(_host_centric, mgPort);
-// }
