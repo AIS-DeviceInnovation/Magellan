@@ -57,7 +57,6 @@ Modified: 22 dec 2025.
 #endif
 
 extern Magellan_Setting setting;
-
 class MAGELLAN_MQTT_4G_BOARD : public MAGELLAN_MQTT
 {
 public:
@@ -91,8 +90,8 @@ public:
   public:
     MAGELLAN_MQTT_4G_BOARD *parent;
 
-    void Init();
-    void Standby();
+    void begin();
+    void disable();
     boolean available();
     float readLatitude();
     float readLongitude();
@@ -101,14 +100,23 @@ public:
     float readCourse();
     String readLocation();
     unsigned long getUnixTime();
-    GPS_Data getCurrentGPSData(); 
+    GPS_Data getCurrentGPSData();
+
   private:
     GPS_SIM7600E gps_internal;
     GPS_Data _gpsData;
   } gps;
 
-private:
+  struct BuiltinSensor
+  {
+  public:
+    MAGELLAN_MQTT_4G_BOARD *parent;
+    void begin();
+    float readTemperature();
+    float readHumidity();
+  } builtInSensor;
 
+private:
 protected:
 };
 #endif

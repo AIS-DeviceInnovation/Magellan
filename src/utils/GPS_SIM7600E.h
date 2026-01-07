@@ -11,6 +11,7 @@ struct GPS_Data
     float alt = 0;
     float speed = 0;
     float course = 0;
+    int accuracy = 0;
     time_t utc = 0;
     bool valid = false;
 };

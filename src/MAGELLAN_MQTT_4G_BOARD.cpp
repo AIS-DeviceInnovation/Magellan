@@ -166,13 +166,6 @@ void MAGELLAN_MQTT_4G_BOARD::InitGSM()
 
 void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
 {
-
-  // this->powerModem();
-  // delay(1000);
-  // Serial.println(F("# ==== USE AIS 4G BOARD MODE ===="));
-  // this->initSerialModem();
-  // this->connectModem();
-  // getRadio();
   this->InitGSM();
 
 #ifdef BYPASS_REQTOKEN
@@ -227,14 +220,14 @@ void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
   // second validate after get information
   if (coreMQTT->CheckString_isDigit(_setting.ThingIdentifier) && coreMQTT->CheckString_isDigit(_setting.ThingSecret))
   {
-    Serial.println(F("=========== Prepare Credentials ============"));
-    Serial.print(F("ThingIdentifier: "));
-    Serial.println(_setting.ThingIdentifier);
-    Serial.print(F("ThingSecret: "));
-    Serial.println(_setting.ThingSecret);
-    Serial.print(F("IMEI: "));
-    Serial.println(_setting.IMEI);
-    Serial.println(F("============================================"));
+    // Serial.println(F("=========== Prepare Credentials ============"));
+    // Serial.print(F("ThingIdentifier: "));
+    // Serial.println(_setting.ThingIdentifier);
+    // Serial.print(F("ThingSecret: "));
+    // Serial.println(_setting.ThingSecret);
+    // Serial.print(F("IMEI: "));
+    // Serial.println(_setting.IMEI);
+    // Serial.println(F("============================================"));
     this->MAGELLAN_MQTT::begin(_setting);
     setting = _setting;
   }
@@ -248,6 +241,8 @@ void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
     delay(5000);
     ESP.restart();
   }
+
+  this->builtInSensor.begin();
 }
 
 void MAGELLAN_MQTT_4G_BOARD::disconnect()
@@ -270,13 +265,7 @@ void MAGELLAN_MQTT_4G_BOARD::loop()
 void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
 {
   this->parent->InitGSM();
-  // Serial.println(F("# ==== USE AIS 4G BOARD MODE CENTRIC ===="));
-  // parent->powerModem();
-  // delay(1000);
-  // parent->initSerialModem();
-  // parent->connectModem();
-  // getRadio();
-  // Ensure modem is connected
+
   if (!_modem.isGprsConnected())
   {
     Serial.println("Connecting to mobile network for Centric...");
@@ -336,6 +325,7 @@ void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
     delay(5000);
     ESP.restart();
   }
+  this->parent->builtInSensor.begin();
 }
 
 // GPS
@@ -346,7 +336,7 @@ GPS_Data MAGELLAN_MQTT_4G_BOARD::GPS_utils::getCurrentGPSData()
   GPS_Data data;
   if (this->gps_internal.gpsIsOn(modem))
   {
-    this->gps_internal.gpsRead(modem, data);
+    this->gps_internal.gpsRead(modem, data); 
   }
   this->_gpsData = data;
   return data;
@@ -354,7 +344,7 @@ GPS_Data MAGELLAN_MQTT_4G_BOARD::GPS_utils::getCurrentGPSData()
 
 boolean MAGELLAN_MQTT_4G_BOARD::GPS_utils::available()
 {
-  TinyGsm & modem = this->parent->getGSMModem();
+  TinyGsm &modem = this->parent->getGSMModem();
   return this->gps_internal.available(modem);
 }
 float MAGELLAN_MQTT_4G_BOARD::GPS_utils::readLatitude()
@@ -400,15 +390,32 @@ unsigned long MAGELLAN_MQTT_4G_BOARD::GPS_utils::getUnixTime()
   return _unix;
 }
 
-void MAGELLAN_MQTT_4G_BOARD::GPS_utils::Standby()
+void MAGELLAN_MQTT_4G_BOARD::GPS_utils::disable()
 {
   TinyGsm &modem = this->parent->getGSMModem();
   this->gps_internal.gpsEnd(modem);
 }
-void MAGELLAN_MQTT_4G_BOARD::GPS_utils::Init()
+void MAGELLAN_MQTT_4G_BOARD::GPS_utils::begin()
 {
   TinyGsm &modem = this->parent->getGSMModem();
   modem.enableGPS();
   delay(500);
   this->gps_internal.gpsInit(modem);
+}
+
+// Built-in Sensor
+void MAGELLAN_MQTT_4G_BOARD::BuiltinSensor::begin()
+{
+  Wire.begin();
+  SHT40.begin();
+}
+
+float MAGELLAN_MQTT_4G_BOARD::BuiltinSensor::readTemperature()
+{
+  return SHT40.readTemperature();
+}
+
+float MAGELLAN_MQTT_4G_BOARD::BuiltinSensor::readHumidity()
+{
+  return SHT40.readHumidity();
 }
