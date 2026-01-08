@@ -55,6 +55,7 @@ void setup()
   TinyGsmClient &gsmClient = Board.getGSMClient();
   mqttClient.setClient(gsmClient);
   mqttClient.setServer(MQTT_Server, MQTT_port);
+  mqttClient.setBufferSize(512); //up to 8192 bytes หาใช้งานกับ payload ขนาดใหญ่ แนะนำให้ใช้ 4096 ขึ้นไป - 8192
   mqttClient.setCallback(callback);
 }
 
