@@ -652,13 +652,13 @@ MAGELLAN_MQTT_4G_BOARD magel;
    * [Magellan simple example code](examples/example_MQTT/AIS_4G_Board/Magellan/simple_example/simple_example.ino) ตัวอย่างการเชื่อมต่อบอร์ด AIS 4G มายัง Magellan IoT Platform
  
   * `GSM Function Helper (optional)`
-    * `magel.powerModem` ใช้งานสำหรับสั่งงาน Power ไปยัง GSM Module Sim7600e ให้พร้อมใช้งาน.
-    * `magel.initSerialModem` ใช้งานสำหรับ initailized Serial เข้ากับ Modem.
-    * `magel.connectModem` ใช้สำหรับเชื่อมต่อ GSM Modem.
-    * `magel.checkModem` ใช้สำหรับตรวจสอบการเชื่อมต่อ GSM. และ reconnect ใหม่เมื่อ GSM มีการถูกตัดการเชื่อมต่อ
-    * `magel.InitGSM` เป็น function Wrap Sequence การทำงานเพื่อเปิดใช้งาน GSM ซึ่งภายในจะเป็นเรียงการทำงานจาก Function GSM Helper.
-    * `magel.getGSMClient` ใช้สำหรับเข้าถึง GSMClient เพื่อใช้ใน feature ที่จำเป็นต้องใช้ GSMClient
-    * `magel.getGSMModem` ใช้สำหรับเข้าถึง GSMClient เพื่อใช้ใน feature ที่จำเป็นต้องใช้ GSMModem เช่น ทดสอบ AT Command หรือเปิดปิดบาง Feature ที่ไม่ได้ Binding ไว้
+    * `magel.powerModem()` ใช้งานสำหรับสั่งงาน Power ไปยัง GSM Module Sim7600e ให้พร้อมใช้งาน.
+    * `magel.initSerialModem()` ใช้งานสำหรับ initailized Serial เข้ากับ Modem.
+    * `magel.connectModem()` ใช้สำหรับเชื่อมต่อ GSM Modem.
+    * `magel.checkModem()` ใช้สำหรับตรวจสอบการเชื่อมต่อ GSM. และ reconnect ใหม่เมื่อ GSM มีการถูกตัดการเชื่อมต่อ
+    * `magel.InitGSM()` เป็น function Wrap Sequence การทำงานเพื่อเปิดใช้งาน GSM ซึ่งภายในจะเป็นเรียงการทำงานจาก Function GSM Helper.
+    * `magel.getGSMClient()` ใช้สำหรับเข้าถึง GSMClient เพื่อใช้ใน feature ที่จำเป็นต้องใช้ GSMClient
+    * `magel.getGSMModem()` ใช้สำหรับเข้าถึง GSMClient เพื่อใช้ใน feature ที่จำเป็นต้องใช้ GSMModem เช่น ทดสอบ AT Command หรือเปิดปิดบาง Feature ที่ไม่ได้ Binding ไว้
   
   * `Builtin Sensors`
       * `magel.builtInSensor.begin()` เริ่มต้นการใช้งาน builtin sensor SHT40 (เปิดใช้อัตโนมัติอยู่แล้วหากใช้งาน magellan)
