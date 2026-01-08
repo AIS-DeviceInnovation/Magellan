@@ -14,6 +14,6 @@
       "type": "git",
       "url": "https://github.com/AIS-DeviceInnovation/Magellan.git"
   }, 
-  "version": "1.2.2",
+  "version": "1.3.0",
   "platforms": "*"
 }
