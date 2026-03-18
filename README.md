@@ -1,4 +1,4 @@
-![Library Version](https://img.shields.io/badge/Version-1.3.0-green)
+![Library Version](https://img.shields.io/badge/Version-1.3.1-green)
 
 # Magellan Library for Arduino
 
@@ -665,11 +665,8 @@ MAGELLAN_MQTT_4G_BOARD magel;
       * `magel.builtInSensor.readTemperature()` อ่านค่าจาก builtin sensor SHT40
       * `magel.builtInSensor.readHumidity()` อ่านค่าจาก builtin sensor SHT40
 
-  * `Builtin Sensors`
-      * `magel.builtInSensor.begin()` เริ่มต้นการใช้งาน builtin sensor SHT40 
-
   * `GPS`
-      * `magel.gps.begin()` เริ่มต้นการใช้งาน GPS (SIM7600E)
+      * `magel.gps.begin()` เริ่มต้นการใช้งาน GPS (SIM7600E) เปิดใช้งาน GPS
       * `magel.gps.disable()` ปิดการทำงานของ GPS เพื่อประหยัดพลังงาน
       * `magel.gps.available()` ตรวจสอบว่ามีข้อมูล GPS พร้อมใช้งานหรือไม่
       * `magel.gps.readLatitude()` อ่านค่าละติจูด (Latitude)

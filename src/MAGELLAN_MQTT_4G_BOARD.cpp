@@ -125,7 +125,7 @@ void MAGELLAN_MQTT_4G_BOARD::connectModem()
     Serial.print("Failed to connect! Retry ");
     Serial.print(++retry);
     Serial.println("/10");
-    delay(2000);
+    delay(1000);
 
     if (retry >= 10)
     {
@@ -326,6 +326,17 @@ void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
     ESP.restart();
   }
   this->parent->builtInSensor.begin();
+}
+
+int16_t MAGELLAN_MQTT_4G_BOARD::getSignalStrength(){
+  int rssiNomalized = _modem.getSignalQuality();
+  int rssiDbm = mapRSSITodBm(rssiNomalized);
+  return rssiDbm;
+}
+
+String MAGELLAN_MQTT_4G_BOARD::getRSSIQuality(){
+  int16_t dBm = _modem.getSignalQuality();
+  return getSignalStrengthCategory(dBm);
 }
 
 // GPS

@@ -57,6 +57,7 @@ struct Magellan_Setting
   String IMEI = "null";
   size_t clientBufferSize = defaultBuffer;
   String endpoint = _host_production;
+  int port = mgPort;
 #ifdef BYPASS_REQTOKEN
   String ThingToken = "null";
 #endif

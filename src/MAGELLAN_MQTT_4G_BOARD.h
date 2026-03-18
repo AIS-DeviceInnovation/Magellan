@@ -76,6 +76,9 @@ public:
   void reconnect() override;
   void loop() override;
 
+  int16_t getSignalStrength(); // in dBm
+  String getRSSIQuality();
+
   struct Centric
   {
   public:

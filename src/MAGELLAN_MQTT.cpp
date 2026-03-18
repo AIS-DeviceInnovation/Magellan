@@ -123,7 +123,15 @@ void MAGELLAN_MQTT::begin(Magellan_Setting _setting)
     Serial.println(_setting.ThingSecret);
     Serial.print(F("IMEI: "));
     Serial.println(_setting.IMEI);
-    beginCustom(_setting.ThingIdentifier, _setting.ThingSecret, _setting.IMEI, _setting.endpoint, mgPort, revertChunkToBufferSize);
+    if (_setting.port > 0)
+    {
+
+      beginCustom(_setting.ThingIdentifier, _setting.ThingSecret, _setting.IMEI, _setting.endpoint, _setting.port, revertChunkToBufferSize);
+    }
+    else
+    {
+      beginCustom(_setting.ThingIdentifier, _setting.ThingSecret, _setting.IMEI, _setting.endpoint, mgPort, revertChunkToBufferSize);
+    }
     setting = _setting;
   }
   else

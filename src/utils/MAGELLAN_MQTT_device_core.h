@@ -71,6 +71,7 @@ Modified: 22 may 2023.
 #define GET_ENDPOINT 13
 
 #define mgPort 1883
+#define mgCentricPort mgPort
 // for define mode Timestamp
 #define SET_UNIXTS 0
 
