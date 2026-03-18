@@ -1540,7 +1540,8 @@ void MAGELLAN_MQTT_device_core::reconnectMagellan()
     srand(time(NULL));
     int randnum = rand() % 10000;   // generate number concat in Client id
     int randnum_2 = rand() % 10000; // generate number concat in Client id
-    String client_idBuff = client_id + "_" + String(randnum) + "_" + String(randnum_2);
+    String client_idBuff = "OTHER_" + this->thingIden + "_" + String(randnum) + "_" + String(randnum_2) + "_" + String(lib_ver);
+    client_id = client_idBuff;
     Serial.println(F("Attempting MQTT connection ..."));
     this->client->setServer(this->host.c_str(), this->port);
     this->client->setCallback(msgCallback_internalHandler);
@@ -2969,7 +2970,7 @@ void MAGELLAN_MQTT_device_core::getEndPoint()
   {
     String topic = "api/v2/things/" + this->thingIden + "/" + this->thingSecret + "/server/destination/response";
     this->flagRegisterEndPoint = this->client->subscribe(topic.c_str());
-    Serial.println("# Register destination server: " + String(flagRegisterEndPoint));
+    Serial.println("# Register destination server: " + String(flagRegisterEndPoint ? "Success" : "Fail"));
   }
   while (!flagGetEndPoint)
   {
@@ -2996,8 +2997,10 @@ void MAGELLAN_MQTT_device_core::getEndPoint()
     srand(time(NULL));
     int randnum = rand() % 10000;   // generate number concat in Client id
     int randnum_2 = rand() % 10000; // generate number concat in Client id
-    String client_idBuff = client_id + "_" + String(randnum) + "_" + String(randnum_2);
-    this->beginCustom(client_idBuff, _centric.endPoint_IP, (_centric.endPoint_PORT).toInt(), this->_default_bufferSize);
+    String client_idBuff = "OTHER_" + this->thingIden + "_" + String(randnum) + "_" + String(randnum_2) + "_" + String(lib_ver);
+    client_id = client_idBuff;
+    // this->beginCustom(client_idBuff, _centric.endPoint_IP, (_centric.endPoint_PORT).toInt(), this->_default_bufferSize);
+    this->beginCustom(client_idBuff, _centric.endPoint_DOMAIN, (_centric.endPoint_PORT).toInt(), this->_default_bufferSize);
   }
 }
 
@@ -3010,15 +3013,15 @@ void MAGELLAN_MQTT_device_core::magellanCentric()
       srand(time(NULL));
       int randnum = rand() % 10000;   // generate number concat in Client id
       int randnum_2 = rand() % 10000; // generate number concat in Client id
-      this->client_id = "Centric_" + this->thingIden;
-      String client_idBuff = client_id + "_" + String(randnum) + "_" + String(randnum_2);
+      String client_idBuff = "Centric_Other_" + this->thingIden + "_" + String(randnum) + "_" + String(randnum_2) + "_" + String(lib_ver);
+      client_id = client_idBuff;
       Serial.println(F("#Attempting connection ..."));
       this->host = _host_centric;
-      this->port = mgPort; // auto_assigned Client ID with ThingIdent
+      this->port = mgCentricPort; // auto_assigned Client ID with ThingIdent
       this->client->setBufferSize(this->_default_bufferSize);
       this->setCallback_msgHandle();
-      this->client->setServer(_host_centric, mgPort);
-      Serial.println("Connecting Magellan on: " + String(this->host) + ", Port: " + String(this->port));
+      this->client->setServer(this->host.c_str(), this->port);
+      Serial.println("Connecting Centric Magellan on: " + String(this->host) + ", Port: " + String(this->port));
       String thisIdenCentric = "Centric." + this->thingIden;
       if (this->client->connect(client_idBuff.c_str(), thisIdenCentric.c_str(), this->thingSecret.c_str()))
       {
