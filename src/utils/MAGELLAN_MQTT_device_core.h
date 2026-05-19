@@ -32,7 +32,11 @@ Modified: 22 may 2023.
 
 #include <Arduino.h>
 #include "./PubSubClient.h"
+#ifndef USE_ARDUINOJSON7_DEPENDENCY
 #include "./ArduinoJson-v6.18.3.h"
+#else
+#include <ArduinoJson.h>
+#endif
 
 #include <Arduino.h>
 #ifdef ESP32
@@ -199,7 +203,11 @@ public:
   void registerList(func_callback_registerList cb_regisList);
 
   // interface MAGELLANJSON
+#ifndef USE_ARDUINOJSON7_DEPENDENCY
   StaticJsonDocument<256> docJson;
+#else
+  JsonDocument docJson;
+#endif
 
   String deserialControlJSON(String jsonContent);
   JsonObject deserialJson(String jsonContent);

@@ -10,7 +10,11 @@ Released for private usage.
 #include <Arduino.h>
 #include <Client.h>
 #include "./PubSubClient.h"
+#ifndef USE_ARDUINOJSON7_DEPENDENCY
 #include "./ArduinoJson-v6.18.3.h"
+#else
+#include <ArduinoJson.h>
+#endif
 #include "./FileSystem.h"
 #include "./manageConfigOTAFile.h"
 #include "./manageCredentialFile.h"
@@ -32,8 +36,8 @@ Released for private usage.
 // #endif
 
 #define _major_ver 1
-#define _feature_ver 3
-#define _enhance_ver 1
+#define _feature_ver 4
+#define _enhance_ver 0
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -85,9 +89,15 @@ public:
   static size_t calculate_chunkSize;
   static boolean inProcessOTA;
   static boolean startReqDownloadOTA;
+#ifndef USE_ARDUINOJSON7_DEPENDENCY
   static StaticJsonDocument<512> docClientConf;
   static DynamicJsonDocument *adjDoc;
   static DynamicJsonDocument *docSensor;
+#else
+  static JsonDocument docClientConf;
+  static JsonDocument *adjDoc;
+  static JsonDocument *docSensor;
+#endif
   static boolean checkUpdate_inside;
   static unsigned int delayCheckUpdate_inside;
   static unsigned int delayRequest_download;

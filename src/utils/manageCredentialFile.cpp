@@ -140,7 +140,7 @@ JsonObject manageCredentialFile::readObjectCredentialFile()
   String buffReadCredential = readCredentialFile();
   JsonObject buffer;
   CredDoc.clear();
-  if(buffReadCredential != NULL)
+  if(buffReadCredential.length() > 0)
   {
     DeserializationError error = deserializeJson(CredDoc, buffReadCredential);
     buffer = CredDoc.as<JsonObject>();
@@ -155,7 +155,7 @@ JsonObject manageCredentialFile::readObjectPreviousCredentialFile()
   String buffReadCredential = readPreviousCredentialFile();
   JsonObject buffer;
   CredDoc.clear();
-  if(buffReadCredential != NULL)
+  if(buffReadCredential.length() > 0)
   {
     DeserializationError error = deserializeJson(CredDoc, buffReadCredential);
     buffer = CredDoc.as<JsonObject>();
@@ -181,13 +181,10 @@ String manageCredentialFile::readSpacificPreviousCredentialFile(String readKey)
 
 boolean manageCredentialFile::saveStatusCredential(String status)
 {
-    JsonObject buffCred = readObjectCredentialFile();
-
-    StaticJsonDocument<256> docsBuffer = buffCred;
-    docsBuffer["status"] = status.c_str();
+    readObjectCredentialFile();  // re-populates CredDoc
+    CredDoc["status"] = status.c_str();
     String credentialUpdate;
-    serializeJson(docsBuffer, credentialUpdate);
-
+    serializeJson(CredDoc, credentialUpdate);
     return fileSys.writeFile(credentialPath, credentialUpdate.c_str());
 }
 

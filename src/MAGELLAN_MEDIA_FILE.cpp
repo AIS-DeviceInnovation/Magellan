@@ -40,11 +40,10 @@ size_t readBuffersize()
 String buildSensorJSON(JsonDocument &ref_docs)
 {
     String bufferJsonStr;
-    // Serial.println("# [Build JSON Key is]: "+ String(ref_docs.size()) +" key");
+#ifndef USE_ARDUINOJSON7_DEPENDENCY
     size_t mmr_usage = ref_docs.memoryUsage();
     size_t max_size = ref_docs.memoryPool().capacity();
     size_t safety_size = max_size * (0.97);
-    // Serial.println("Safety size: "+String(safety_size));
     if (mmr_usage >= safety_size)
     {
         bufferJsonStr = "null";
@@ -55,8 +54,22 @@ String buildSensorJSON(JsonDocument &ref_docs)
         serializeJson(ref_docs, bufferJsonStr);
         Serial.println("# [to JSON String Key is]: " + String(ref_docs.size()) + " key");
     }
-
     Serial.println("# MemoryUsage: " + String(mmr_usage) + "/" + String(safety_size) + " from(" + String(ref_docs.memoryPool().capacity()) + ")");
+#else
+    const size_t max_size = 8192;
+    size_t mmr_usage = measureJson(ref_docs);
+    if (mmr_usage >= max_size)
+    {
+        bufferJsonStr = "null";
+        Serial.println("# [Overload memory toJSONString] *Maximum size: " + String(max_size));
+    }
+    else
+    {
+        serializeJson(ref_docs, bufferJsonStr);
+        Serial.println("# [to JSON String Key is]: " + String(ref_docs.size()) + " key");
+    }
+    Serial.println("# JSON size: " + String(mmr_usage));
+#endif
     return bufferJsonStr;
 }
 
@@ -75,7 +88,16 @@ void adjustBufferFormedia(size_t len_payload)
             // if ((len_payload > attr.mqtt_client->getBufferSize() + 10) && (attr.mqtt_client->getBufferSize() <= 55000))
             if ((len_payload > attr.mqtt_client->getBufferSize() + 10) && (attr.mqtt_client->getBufferSize() <= 55000))
             {
+#ifndef USE_ARDUINOJSON7_DEPENDENCY
+                delete attr.docSensor;
                 attr.docSensor = new DynamicJsonDocument(len_payload);
+#else
+                if (attr.docSensor == NULL) {
+                    attr.docSensor = new JsonDocument();
+                } else {
+                    attr.docSensor->clear();
+                }
+#endif
                 attr.mqtt_client->setBufferSize(len_payload + 3000); // offset mqtt client buffer
             }
         }
@@ -88,12 +110,16 @@ void adjustBufferFormedia(size_t len_payload)
 
 void addSensor(String key, String value, JsonDocument &ref_docs)
 {
+#ifndef USE_ARDUINOJSON7_DEPENDENCY
     int len = value.length();
     char *c_value = new char[len + 1];
     std::copy(value.begin(), value.end(), c_value);
     c_value[len] = '\0';
     ref_docs[key] = c_value;
     delete[] c_value;
+#else
+    ref_docs[key] = value;
+#endif
 }
 
 bool reportJSON(String payload)

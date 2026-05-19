@@ -726,7 +726,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, String sensorValue)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
     Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
@@ -736,7 +736,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, String sensorValue)
     Serial.println(F("# Preparing large data to JSONbuffer"));
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(sensorValue.length() + bufJSON.length() + 3000); // offset size
+    coreMQTT->adjustBufferSensor(sensorValue.length() + bufJSON.length() + 3000);
     deserializeJson(*attr.docSensor, bufJSON);
     Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
@@ -759,7 +759,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, const char *sensorValue)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
 
     Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     deserializeJson(*attr.docSensor, bufJSON);
@@ -770,7 +770,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, const char *sensorValue)
     Serial.println(F("# Preparing large data to JSONbuffer"));
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(strlen(sensorValue) + bufJSON.length() + 3000); // offset size
+    coreMQTT->adjustBufferSensor(strlen(sensorValue) + bufJSON.length() + 3000);
     deserializeJson(*attr.docSensor, bufJSON);
     Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
@@ -788,7 +788,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, int sensorValue)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
     Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
@@ -806,7 +806,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, float sensorValue)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
     Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
@@ -824,7 +824,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, boolean sensorValue)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
     Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
@@ -1039,7 +1039,7 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, String sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
       Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
       Serial.println("Updated [Key]: " + sensorKey);
@@ -1050,7 +1050,7 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, String sensorValue)
       Serial.println(F("# Preparing large data to JSONbuffer"));
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(sensorValue.length() + bufJSON.length() + 3000); // offset size
+      coreMQTT->adjustBufferSensor(sensorValue.length() + bufJSON.length() + 3000);
       deserializeJson(*attr.docSensor, bufJSON);
       Serial.println("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
@@ -1076,7 +1076,7 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, const char *sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
       Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
       Serial.println("Updated [Key]: " + sensorKey);
@@ -1087,7 +1087,7 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, const char *sensorValue)
       Serial.println(F("# Preparing large data to JSONbuffer"));
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(strlen(sensorValue) + bufJSON.length() + 3000); // offset size
+      coreMQTT->adjustBufferSensor(strlen(sensorValue) + bufJSON.length() + 3000);
       deserializeJson(*attr.docSensor, bufJSON);
       Serial.println("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
@@ -1113,7 +1113,7 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, int sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
       Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
       Serial.println("Updated [Key]: " + sensorKey);
@@ -1140,7 +1140,7 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, float sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
       Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
       Serial.println("Updated [Key]: " + sensorKey);
@@ -1167,7 +1167,7 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, boolean sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
       Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
       Serial.println("Updated [Key]: " + sensorKey);
@@ -2108,12 +2108,19 @@ void adjust_BufferForMedia(size_t len_payload)
 JsonDocUtils readSafetyCapacity_Json_doc(JsonDocument &ref_docs)
 {
   JsonDocUtils JsonDocInfo;
+#ifndef USE_ARDUINOJSON7_DEPENDENCY
   size_t mmr_usage = ref_docs.memoryUsage();
   size_t max_size = ref_docs.memoryPool().capacity();
   size_t safety_size = max_size * (0.97);
   JsonDocInfo.used = mmr_usage;
   JsonDocInfo.max_size = max_size;
   JsonDocInfo.safety_size = safety_size;
+#else
+  const size_t max_size = 8192;
+  JsonDocInfo.used = measureJson(ref_docs);
+  JsonDocInfo.max_size = max_size;
+  JsonDocInfo.safety_size = static_cast<size_t>(max_size * 0.97);
+#endif
   return JsonDocInfo;
 }
 
