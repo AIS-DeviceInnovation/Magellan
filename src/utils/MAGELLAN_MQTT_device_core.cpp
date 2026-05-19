@@ -1569,6 +1569,9 @@ void MAGELLAN_MQTT_device_core::reconnectMagellan()
       {
         MG_LOG_E("# MQTT_CONNECT_FAILED (-2): network or DNS resolve failed");
         MG_LOG_E("# Check internet route and DNS on current network before retry");
+#ifdef ESP8266
+        MG_LOG_E("# ESP8266 tip: set IP directly to bypass DNS -> setting.endpoint = \"119.31.104.48\"");
+#endif
       }
 
       if (!flagToken && mqtt_state != -2)
@@ -1576,7 +1579,11 @@ void MAGELLAN_MQTT_device_core::reconnectMagellan()
         MG_LOG_I("# Please check the thing device is activated ");
       }
 
+#ifdef ESP8266
+      delay(5000); // ESP8266 needs extra time for DNS recovery between retries
+#else
       delay(3000);
+#endif
       recon_attempt++;
       MG_LOG_I("# attempt connect on :");
       MG_LOG_I_S(String(recon_attempt) + " times");

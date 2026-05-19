@@ -58,6 +58,16 @@ void connectWiFi(MAGELLAN_WIFI_SETTING &sWIFI_SETTING)
     delay(250);
     Serial.print(".");
   }
+  // ESP8266: DHCP assigns the DNS server shortly after IP — wait until it's ready
+  // before attempting any hostname resolution (e.g. MQTT broker hostname)
+  {
+    unsigned long _dns_t = millis();
+    while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
+      delay(200);
+    }
+    Serial.print(F("\n# DNS Server: "));
+    Serial.println(WiFi.dnsIP());
+  }
 #endif
   Serial.println(F("\n# Wifi Connected!"));
   Serial.print(F("# Connected to WiFi network with IP Address: "));
@@ -106,6 +116,15 @@ void connectWiFi(String SSID, String PASS)
     delay(250);
     Serial.print(".");
   }
+  // ESP8266: DHCP assigns the DNS server shortly after IP — wait until it's ready
+  {
+    unsigned long _dns_t = millis();
+    while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
+      delay(200);
+    }
+    Serial.print(F("\n# DNS Server: "));
+    Serial.println(WiFi.dnsIP());
+  }
 #endif
   Serial.println(F("\n# Wifi Connected!"));
   Serial.print(F("# Connected to WiFi network with IP Address: "));
@@ -138,6 +157,15 @@ void reconnectWiFi(MAGELLAN_MQTT &mqttClient)
 
   if ((!wifiDisconnect) && (!mqttClient.isConnected()))
   {
+#ifdef ESP8266
+    // ESP8266: DNS server may not be ready immediately after WiFi reconnect
+    {
+      unsigned long _dns_t = millis();
+      while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 3000) {
+        delay(200);
+      }
+    }
+#endif
     mqttClient.reconnect();
   }
 }
