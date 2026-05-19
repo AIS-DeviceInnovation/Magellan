@@ -52,9 +52,6 @@ Modified: 22 dec 2025.
 #define PIN_MODEM_TX 13
 #define PIN_MODEM_RX 14
 #define PIN_MODEM_PWR 12
-#elif defined ESP8266
-#error "AIS 4G Board is only supported on ESP32 platform."
-#endif
 
 extern Magellan_Setting setting;
 class MAGELLAN_MQTT_4G_BOARD : public MAGELLAN_MQTT
@@ -122,4 +119,5 @@ public:
 private:
 protected:
 };
-#endif
+#endif // ESP32
+#endif // MAGELLAN_MQTT_4G_H

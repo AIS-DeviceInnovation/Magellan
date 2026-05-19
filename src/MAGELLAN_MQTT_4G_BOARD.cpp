@@ -39,6 +39,7 @@ Modified: 22 dec 2025.
 #include <Arduino.h>
 #include "MAGELLAN_MQTT_4G_BOARD.h"
 
+#ifdef ESP32
 const char *_apn = "aisboard.4g.ais";
 HardwareSerial _SerialAT(1);
 TinyGsm _modem(_SerialAT);
@@ -80,19 +81,27 @@ String getSignalStrengthCategory(int dBm)
 
 void getRadio()
 {
-  Serial.println(F("#========= Radio Quality information =========="));
+  MG_LOG_I("#========= Radio Quality information ==========");
   int rssiNomalized = _modem.getSignalQuality();
   int rssiDbm = mapRSSITodBm(rssiNomalized);
-  Serial.println("Signal Strength: " + String(rssiNomalized));
-  Serial.println("Signal Strength(dBm): " + String(rssiDbm));
-  Serial.println("Description: " + String(getSignalStrengthCategory(rssiDbm)));
-  Serial.println(F("#=============================================="));
+  MG_LOG_I_S("Signal Strength: " + String(rssiNomalized));
+  MG_LOG_I_S("Signal Strength(dBm): " + String(rssiDbm));
+  MG_LOG_I_S("Description: " + String(getSignalStrengthCategory(rssiDbm)));
+  MG_LOG_I("#==============================================");
 }
 
 MAGELLAN_MQTT_4G_BOARD::MAGELLAN_MQTT_4G_BOARD() : MAGELLAN_MQTT(_gsmClient)
 {
   gps.parent = this;
   centric.parent = this;
+
+  // Ensure modem is powered down before OTA-triggered restart on 4G board.
+  attr.cb_before_restart = []()
+  {
+    MG_LOG_I("# GSM shutdown before restart...");
+    _modem.poweroff();
+    delay(4000);
+  };
 }
 
 void MAGELLAN_MQTT_4G_BOARD::initSerialModem()
@@ -109,7 +118,7 @@ void MAGELLAN_MQTT_4G_BOARD::initSerialModem()
 void MAGELLAN_MQTT_4G_BOARD::powerModem()
 {
   pinMode(PIN_MODEM_PWR, OUTPUT);
-  Serial.println("Restarting modem...");
+  MG_LOG_I("Restarting modem...");
   digitalWrite(PIN_MODEM_PWR, LOW);
   delay(50);
   digitalWrite(PIN_MODEM_PWR, HIGH);
@@ -118,28 +127,26 @@ void MAGELLAN_MQTT_4G_BOARD::powerModem()
 
 void MAGELLAN_MQTT_4G_BOARD::connectModem()
 {
-  Serial.println("Connecting to mobile network...");
+  MG_LOG_I("Connecting to mobile network...");
   int retry = 0;
   while (!_modem.gprsConnect(_apn))
   {
-    Serial.print("Failed to connect! Retry ");
-    Serial.print(++retry);
-    Serial.println("/10");
+    MG_LOG_E_S("Failed to connect! Retry " + String(++retry) + "/10");
     delay(1000);
 
     if (retry >= 10)
     {
-      Serial.println("Max retries reached. Restarting ESP...");
+      MG_LOG_E("Max retries reached. Restarting ESP...");
       ESP.restart();
     }
   }
-  Serial.println("modem connected!");
+  MG_LOG_I("modem connected!");
 }
 void MAGELLAN_MQTT_4G_BOARD::checkModem()
 {
   if (!_modem.isGprsConnected())
   {
-    Serial.println("Reconnecting PPP...");
+    MG_LOG_I("Reconnecting PPP...");
     _modem.gprsConnect(_apn);
     delay(500); // รอ PPP stable
   }
@@ -149,14 +156,14 @@ void MAGELLAN_MQTT_4G_BOARD::HandleModem()
 {
   if (_modem.isGprsConnected() && !this->MAGELLAN_MQTT::isConnected())
   {
-    Serial.println("Reconnecting MQTT...");
+    MG_LOG_I("Reconnecting MQTT...");
     this->MAGELLAN_MQTT::reconnect();
   }
 }
 
 void MAGELLAN_MQTT_4G_BOARD::InitGSM()
 {
-  Serial.println(F("# ==== USE AIS 4G BOARD MODE INIT GSM ===="));
+  MG_LOG_I("# ==== USE AIS 4G BOARD MODE INIT GSM ====");
   this->powerModem();
   delay(1000);
   this->initSerialModem();
@@ -175,15 +182,14 @@ void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
   }
   else
   {
-    Serial.println(F("# Invalid setting ThingToken"));
-    Serial.println(F("# Define \"BYPASS_REQTOKEN\" but not setting ThingToken manual back into auto renew ThingToken mode"));
+    MG_LOG_E("# Invalid setting ThingToken");
+    MG_LOG_I("# Define \"BYPASS_REQTOKEN\" but not setting ThingToken manual back into auto renew ThingToken mode");
   }
 #endif
 
   if (_setting.clientBufferSize > _default_OverBufferSize)
   {
-    Serial.print(F("# You have set a buffer size greater than 8192, adjusts to: "));
-    Serial.println(_default_OverBufferSize);
+    MG_LOG_I_S("# You have set a buffer size greater than 8192, adjusts to: " + String(_default_OverBufferSize));
     this->coreMQTT->setMQTTBufferSize(_default_OverBufferSize);
     attr.calculate_chunkSize = _default_OverBufferSize / 2;
   }
@@ -210,11 +216,11 @@ void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
     delay(50);
     _setting.IMEI = _modem.getIMEI();
     delay(50);
-    Serial.println(F("============ Board Information ============"));
-    Serial.println("ICCID: " + _setting.ThingIdentifier);
-    Serial.println("IMSI : " + _setting.ThingSecret);
-    Serial.println("IMEI : " + _setting.IMEI);
-    Serial.println(F("==========================================="));
+    MG_LOG_D("============ Board Information ============");
+    MG_LOG_D_S("ICCID: " + _setting.ThingIdentifier);
+    MG_LOG_D_S("IMSI : " + _setting.ThingSecret);
+    MG_LOG_I_S("IMEI : " + _setting.IMEI);
+    MG_LOG_D("===========================================");
     setting = _setting;
   }
   // second validate after get information
@@ -233,11 +239,10 @@ void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
   }
   else
   {
-    Serial.println(F("# ThingIdentifier(ICCID) or ThingSecret(IMSI) invalid value please check again"));
-    Serial.println("# ThingIdentifier =>" + _setting.ThingIdentifier);
-    Serial.println("# ThingSecret =>" + _setting.ThingSecret);
-    Serial.println(F("# ==========================="));
-    Serial.println(F("# Restart board"));
+    MG_LOG_E("# ThingIdentifier(ICCID) or ThingSecret(IMSI) invalid value please check again");
+    MG_LOG_D_S("# ThingIdentifier =>" + _setting.ThingIdentifier);
+    MG_LOG_D_S("# ThingSecret =>" + _setting.ThingSecret);
+    MG_LOG_E("# Restart board");
     delay(5000);
     ESP.restart();
   }
@@ -252,7 +257,7 @@ void MAGELLAN_MQTT_4G_BOARD::disconnect()
 
 void MAGELLAN_MQTT_4G_BOARD::reconnect()
 {
-  Serial.println(F("# ==== USE AIS 4G BOARD MODE RECONNECT MQTT ===="));
+  MG_LOG_I("# ==== USE AIS 4G BOARD MODE RECONNECT MQTT ====");
   this->MAGELLAN_MQTT::reconnect();
 }
 
@@ -268,22 +273,20 @@ void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
 
   if (!_modem.isGprsConnected())
   {
-    Serial.println("Connecting to mobile network for Centric...");
+    MG_LOG_I("Connecting to mobile network for Centric...");
     int retry = 0;
     while (!_modem.gprsConnect(_apn))
     {
-      Serial.print("Failed to connect! Retry ");
-      Serial.print(++retry);
-      Serial.println("/10");
+      MG_LOG_E_S("Failed to connect! Retry " + String(++retry) + "/10");
       delay(2000);
 
       if (retry >= 10)
       {
-        Serial.println("Max retries reached. Restarting ESP...");
+        MG_LOG_E("Max retries reached. Restarting ESP...");
         ESP.restart();
       }
     }
-    Serial.println("modem connected for Centric!");
+    MG_LOG_I("modem connected for Centric!");
   }
 
   if (_setting.ThingIdentifier == "null" || _setting.ThingSecret == "null")
@@ -294,34 +297,31 @@ void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
     delay(50);
     _setting.IMEI = _modem.getIMEI();
     delay(50);
-    Serial.println(F("================================="));
-    Serial.println("ICCID: " + _setting.ThingIdentifier);
-    Serial.println("IMSI : " + _setting.ThingSecret);
-    Serial.println("IMEI : " + _setting.IMEI);
-    Serial.println(F("================================="));
+    MG_LOG_D("=================================");
+    MG_LOG_D_S("ICCID: " + _setting.ThingIdentifier);
+    MG_LOG_D_S("IMSI : " + _setting.ThingSecret);
+    MG_LOG_I_S("IMEI : " + _setting.IMEI);
+    MG_LOG_D("=================================");
     setting = _setting;
   }
 
   // Validate credentials
   if (coreMQTT->CheckString_isDigit(setting.ThingIdentifier) && coreMQTT->CheckString_isDigit(setting.ThingSecret))
   {
-    Serial.print(F("Centric ThingIdentifier: "));
-    Serial.println(setting.ThingIdentifier);
-    Serial.print(F("Centric ThingSecret: "));
-    Serial.println(setting.ThingSecret);
+    MG_LOG_D_S("Centric ThingIdentifier: " + String(setting.ThingIdentifier));
+    MG_LOG_D_S("Centric ThingSecret: " + String(setting.ThingSecret));
 
     parent->coreMQTT->setAuthMagellan(setting.ThingIdentifier, setting.ThingSecret, setting.IMEI);
     parent->coreMQTT->magellanCentric();
     // Connect to MQTT broker with credentials
-    Serial.println(F("Connecting to Centric MQTT..."));
+    MG_LOG_I("Connecting to Centric MQTT...");
   }
   else
   {
-    Serial.println(F("# Centric credentials invalid!"));
-    Serial.println("# ThingIdentifier =>" + setting.ThingIdentifier);
-    Serial.println("# ThingSecret =>" + setting.ThingSecret);
-    Serial.println(F("# ==========================="));
-    Serial.println(F("# Restart board"));
+    MG_LOG_E("# Centric credentials invalid!");
+    MG_LOG_D_S("# ThingIdentifier =>" + setting.ThingIdentifier);
+    MG_LOG_D_S("# ThingSecret =>" + setting.ThingSecret);
+    MG_LOG_E("# Restart board");
     delay(5000);
     ESP.restart();
   }
@@ -335,7 +335,8 @@ int16_t MAGELLAN_MQTT_4G_BOARD::getSignalStrength(){
 }
 
 String MAGELLAN_MQTT_4G_BOARD::getRSSIQuality(){
-  int16_t dBm = _modem.getSignalQuality();
+  int rssiNomalized = _modem.getSignalQuality();
+  int16_t dBm = mapRSSITodBm(rssiNomalized);
   return getSignalStrengthCategory(dBm);
 }
 
@@ -430,3 +431,4 @@ float MAGELLAN_MQTT_4G_BOARD::BuiltinSensor::readHumidity()
 {
   return SHT40.readHumidity();
 }
+#endif // ESP32

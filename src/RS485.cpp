@@ -1,5 +1,6 @@
 #include "RS485.h"
 
+#ifdef ESP32
 RS485Class::RS485Class(HardwareSerial *uart) {
     this->uart = uart;
 }
@@ -642,5 +643,12 @@ uint16_t RS485Class::CRC16(uint8_t *buf, int len) {
 
   return crc;
 }
-
+// ESP32 / ESP32-S3 have 3 UARTs — Serial2 is available.
+// ESP32-S2, C3, C6, H2 only have 2 UARTs — use Serial1 as the default RS485 port.
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || \
+    defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
+RS485Class RS485(&Serial1);
+#else
 RS485Class RS485(&Serial2);
+#endif
+#endif // ESP32

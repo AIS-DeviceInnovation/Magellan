@@ -8,6 +8,7 @@ Released for private usage.
 #ifndef ATTRIBUTE_CORE_H
 #define ATTRIBUTE_CORE_H
 #include <Arduino.h>
+#include <functional>
 #include <Client.h>
 #include "./PubSubClient.h"
 #ifndef USE_ARDUINOJSON7_DEPENDENCY
@@ -20,6 +21,7 @@ Released for private usage.
 #include "./manageCredentialFile.h"
 #include "./APISubscribeHandler.h"
 #include "./utility.h"
+#include "./MAGELLAN_LOG.h"
 
 #ifdef ESP32
 #ifdef MG_USE_SPIFFS
@@ -112,6 +114,9 @@ public:
   static SubscribesCheckLists sub_check_list;
   static unsigned long refPercentOTA;
   static bool flagPrintProgressOTA;
+  // Called just before ESP.restart() in OTA flow.
+  // 4G engines can set this callback to power off modem safely.
+  static std::function<void()> cb_before_restart;
 };
 extern Attribute_MQTT_core attr;
 #endif
