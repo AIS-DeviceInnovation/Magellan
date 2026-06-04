@@ -2082,7 +2082,7 @@ MG_LOG_I_S("# Sensors payload is too large geater than: " + String(attr.max_payl
 JsonDocUtils readSafetyCapacity_Json_doc(JsonDocument &ref_docs)
 {
   JsonDocUtils JsonDocInfo;
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
   size_t mmr_usage = ref_docs.memoryUsage();
   size_t max_size = ref_docs.memoryPool().capacity();
   size_t safety_size = max_size * (0.97);

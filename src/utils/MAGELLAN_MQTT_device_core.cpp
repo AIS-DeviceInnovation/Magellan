@@ -31,7 +31,7 @@ Modified: 22 may 2023.
 #include "MAGELLAN_MQTT_device_core.h"
 
 String Attribute_MQTT_core::statusActivateCode = "null";
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
 StaticJsonDocument<512> intern_docJSON;
 #else
 JsonDocument intern_docJSON;
@@ -77,7 +77,7 @@ boolean Attribute_MQTT_core::startReqDownloadOTA = false;
 boolean Attribute_MQTT_core::checkTimeout_request_download_fw = false;
 unsigned int Attribute_MQTT_core::timeout_req_download_fw = 180000;
 unsigned long Attribute_MQTT_core::prv_cb_timeout_millis = 0;
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
 StaticJsonDocument<512> Attribute_MQTT_core::docClientConf;
 DynamicJsonDocument *Attribute_MQTT_core::adjDoc = new DynamicJsonDocument(256);
 DynamicJsonDocument *Attribute_MQTT_core::docSensor = new DynamicJsonDocument(1024);
@@ -129,7 +129,8 @@ String b2str(byte *payload, unsigned int length) // convert byte* to String
   String result;
   result.reserve(length);
   const char *p = reinterpret_cast<const char *>(payload);
-  for (unsigned int i = 0; i < length; i++) {
+  for (unsigned int i = 0; i < length; i++)
+  {
     result += p[i];
   }
   return result;
@@ -1335,10 +1336,17 @@ void msgCallback_internalHandler(char *topic, byte *payload, unsigned int length
   // Serial.println("#DEBUG INSIDE :"+intern_EVENT.Payload);
 }
 
-static void ensureJsonDocPointersReady() {
+static void ensureJsonDocPointersReady()
+{
 #if ARDUINOJSON_VERSION_MAJOR >= 7
-  if (attr.adjDoc == NULL) { attr.adjDoc = new JsonDocument(); }
-  if (attr.docSensor == NULL) { attr.docSensor = new JsonDocument(); }
+  if (attr.adjDoc == NULL)
+  {
+    attr.adjDoc = new JsonDocument();
+  }
+  if (attr.docSensor == NULL)
+  {
+    attr.docSensor = new JsonDocument();
+  }
 #endif
 }
 
@@ -1384,11 +1392,19 @@ void MAGELLAN_MQTT_device_core::setMQTTBufferSize(uint16_t sizeBuffer)
 
 void MAGELLAN_MQTT_device_core::setAuthMagellan(String _thingIden, String _thingSecret, String _imei)
 {
-  MG_LOG_I("#====== Setting Magellan Authentication =======");  if (!(CheckString_isDigit(_thingIden) && CheckString_isDigit(_thingSecret)))
+  MG_LOG_I("#====== Setting Magellan Authentication =======");
+  if (!(CheckString_isDigit(_thingIden) && CheckString_isDigit(_thingSecret)))
   {
-    MG_LOG_I_S("# ERROR Can't connect to Magellan");    MG_LOG_I_S("# Parameter from you setting invalid \n [thingIdentifier]=> ");    MG_LOG_I_S(_thingIden);    MG_LOG_I_S("   [thingSecret]=> ");    MG_LOG_I_S(_thingSecret);    MG_LOG_I("# Invalid Parameter!! Please check [thingIdentifier] and [thingSecret]");    while (true)
+    MG_LOG_I_S("# ERROR Can't connect to Magellan");
+    MG_LOG_I_S("# Parameter from you setting invalid \n [thingIdentifier]=> ");
+    MG_LOG_I_S(_thingIden);
+    MG_LOG_I_S("   [thingSecret]=> ");
+    MG_LOG_I_S(_thingSecret);
+    MG_LOG_I("# Invalid Parameter!! Please check [thingIdentifier] and [thingSecret]");
+    while (true)
     {
-      MG_LOG_I_S(".");      delay(100);
+      MG_LOG_I_S(".");
+      delay(100);
       cnt_fail++;
       if (cnt_fail >= 100) // timeout Restart board 30 sec
       {
@@ -1398,7 +1414,8 @@ void MAGELLAN_MQTT_device_core::setAuthMagellan(String _thingIden, String _thing
   }
   else
   {
-    MG_LOG_I("# Setting Magellan Authentication Success");  }
+    MG_LOG_I("# Setting Magellan Authentication Success");
+  }
   this->thingIden = _thingIden;
   this->thingSecret = _thingSecret;
   this->imei = _imei;
@@ -1460,19 +1477,33 @@ void MAGELLAN_MQTT_device_core::setMessageListener(void (*callback)(EVENTS, char
 void MAGELLAN_MQTT_device_core::dead_reconnect_handler()
 {
   ulong diff_time_reconnect = millis() - this->fallback_dead_reconnect_time;
-  MG_LOG_I_S("# Reconnect Elapsed Time (ms): ");  MG_LOG_I_S(String(diff_time_reconnect));  if (diff_time_reconnect <= this->threshold_dead_reconnect_time)
+  MG_LOG_I_S("# Reconnect Elapsed Time (ms): ");
+  MG_LOG_I_S(String(diff_time_reconnect));
+  if (diff_time_reconnect <= this->threshold_dead_reconnect_time)
   {
-    MG_LOG_I_S("# Threshold Dead Reconnect Time (ms): ");    MG_LOG_I_S(String(this->threshold_dead_reconnect_time));    MG_LOG_I("# Detected Dead Reconnect Elapsed Time <= Threshold Dead Reconnect Time");    this->cnt_dead_reconnect_time++;
-    MG_LOG_I_S("# Dead Reconnect Attempt: ");    MG_LOG_I_S(String(this->cnt_dead_reconnect_time));    MG_LOG_I_S("/");    MG_LOG_I_S(String(this->max_cnt_dead_reconnect_time));
+    MG_LOG_I_S("# Threshold Dead Reconnect Time (ms): ");
+    MG_LOG_I_S(String(this->threshold_dead_reconnect_time));
+    MG_LOG_I("# Detected Dead Reconnect Elapsed Time <= Threshold Dead Reconnect Time");
+    this->cnt_dead_reconnect_time++;
+    MG_LOG_I_S("# Dead Reconnect Attempt: ");
+    MG_LOG_I_S(String(this->cnt_dead_reconnect_time));
+    MG_LOG_I_S("/");
+    MG_LOG_I_S(String(this->max_cnt_dead_reconnect_time));
     if (this->cnt_dead_reconnect_time >= this->max_cnt_dead_reconnect_time)
     {
-      MG_LOG_I("# Reach Max Dead Reconnect Attempt, Restart Board");      delay(3000);
+      MG_LOG_I("# Reach Max Dead Reconnect Attempt, Restart Board");
+      delay(3000);
       ESP.restart();
     }
   }
   else
   {
-    MG_LOG_I("# Dead Reconnect Reset Counter");    MG_LOG_I_S("# Reconnect Elapsed Time > Threshold Dead Reconnect Time (ms):  ");    MG_LOG_I_S(String(diff_time_reconnect));    MG_LOG_I_S(" ->");    MG_LOG_I_S(this->threshold_dead_reconnect_time);    this->cnt_dead_reconnect_time = 0;
+    MG_LOG_I("# Dead Reconnect Reset Counter");
+    MG_LOG_I_S("# Reconnect Elapsed Time > Threshold Dead Reconnect Time (ms):  ");
+    MG_LOG_I_S(String(diff_time_reconnect));
+    MG_LOG_I_S(" ->");
+    MG_LOG_I_S(this->threshold_dead_reconnect_time);
+    this->cnt_dead_reconnect_time = 0;
   }
   this->fallback_dead_reconnect_time = millis();
 }
@@ -1481,11 +1512,13 @@ void MAGELLAN_MQTT_device_core::reconnect()
 {
   while (!isConnected())
   {
-    MG_LOG_I("Device Disconected from Magellan...");    this->dead_reconnect_handler();
+    MG_LOG_I("Device Disconected from Magellan...");
+    this->dead_reconnect_handler();
     checkConnection();
     if (flagToken)
     {
-      MG_LOG_I_S("# Remain Subscribes list\n");      attr.triggerRemainSub = true;
+      MG_LOG_I_S("# Remain Subscribes list\n");
+      attr.triggerRemainSub = true;
 
       attr.triggerRemainOTA = true;
       if (!attr.flagAutoOTA)
@@ -1510,7 +1543,8 @@ void MAGELLAN_MQTT_device_core::acceptToken(String payload)
   {
     this->flagToken = true;
     this->token = payload;
-    MG_LOG_I_S("# Thingtoken: " + token);  }
+    MG_LOG_I_S("# Thingtoken: " + token);
+  }
 }
 
 void MAGELLAN_MQTT_device_core::acceptToken(EVENTS event)
@@ -1522,7 +1556,8 @@ void MAGELLAN_MQTT_device_core::acceptToken(EVENTS event)
     {
       this->flagToken = true;
       this->token = _payload;
-      MG_LOG_I_S("# Token >> :" + token);    }
+      MG_LOG_I_S("# Token >> :" + token);
+    }
   }
 }
 
@@ -1620,7 +1655,9 @@ void MAGELLAN_MQTT_device_core::beginCustom(String _client_id, String _host, int
   this->client_id = _client_id;
   if (bufferSize > _default_OverBufferSize)
   {
-    MG_LOG_I_S("# Buffer size from you set over than 8192 set buffer to: ");    MG_LOG_I("");    this->setBufferSize(_default_OverBufferSize);
+    MG_LOG_I_S("# Buffer size from you set over than 8192 set buffer to: ");
+    MG_LOG_I("");
+    this->setBufferSize(_default_OverBufferSize);
     attr.calculate_chunkSize = _default_bufferSize / 2;
   }
   else
@@ -1632,7 +1669,10 @@ void MAGELLAN_MQTT_device_core::beginCustom(String _client_id, String _host, int
     checkConnection();
   else
   {
-    MG_LOG_I("# ThingIdentifier or ThingSecret is incorrect please check");    MG_LOG_I("# can't connect to server");    MG_LOG_I_S("# ThingIdentifier: " + this->thingIden + "\nThingSecret: " + this->thingSecret);    delay(5000);
+    MG_LOG_I("# ThingIdentifier or ThingSecret is incorrect please check");
+    MG_LOG_I("# can't connect to server");
+    MG_LOG_I_S("# ThingIdentifier: " + this->thingIden + "\nThingSecret: " + this->thingSecret);
+    delay(5000);
     ESP.restart();
   }
 }
@@ -1640,25 +1680,37 @@ void MAGELLAN_MQTT_device_core::beginCustom(String _client_id, String _host, int
 void MAGELLAN_MQTT_device_core::begin(String _thingIden, String _thingSecret, String _imei, uint16_t bufferSize)
 {
   setAuthMagellan(_thingIden, _thingSecret, _imei);
-  MG_LOG_I_S("ThingIdentifier: ");  MG_LOG_I_S(_thingIden);  MG_LOG_I_S("ThingSecret: ");  MG_LOG_I_S(_thingSecret);  MG_LOG_I_S("IMEI: ");  MG_LOG_I_S(_imei);  if (_thingIden != NULL && _thingSecret != NULL)
+  MG_LOG_I_S("ThingIdentifier: ");
+  MG_LOG_I_S(_thingIden);
+  MG_LOG_I_S("ThingSecret: ");
+  MG_LOG_I_S(_thingSecret);
+  MG_LOG_I_S("IMEI: ");
+  MG_LOG_I_S(_imei);
+  if (_thingIden != NULL && _thingSecret != NULL)
     initMQTTClient(_thingIden, bufferSize);
   else
   {
-    MG_LOG_I("# ThingIdentifier or ThingSecret is incorrect please check");    MG_LOG_I("# can't connect to server");    MG_LOG_I_S("# ThingIdentifier: " + _thingIden + "\nThingSecret: " + _thingSecret);    delay(5000);
+    MG_LOG_I("# ThingIdentifier or ThingSecret is incorrect please check");
+    MG_LOG_I("# can't connect to server");
+    MG_LOG_I_S("# ThingIdentifier: " + _thingIden + "\nThingSecret: " + _thingSecret);
+    delay(5000);
     ESP.restart();
   }
 }
 
 void MAGELLAN_MQTT_device_core::initMQTTClient(String _client_id, uint16_t bufferSize)
 {
-  MG_LOG_I_S("=================== Begin MAGELLAN Library  " + String(lib_version) + " ===================");  delay(2000);
+  MG_LOG_I_S("=================== Begin MAGELLAN Library  " + String(lib_version) + " ===================");
+  delay(2000);
 
   this->host = _host_production;
   this->port = mgPort;
   this->client_id = _client_id;
   if (bufferSize > _default_OverBufferSize)
   {
-    MG_LOG_I_S("# Buffer size from you set over than 8192 set buffer to: ");    MG_LOG_I("");    this->setBufferSize(_default_OverBufferSize);
+    MG_LOG_I_S("# Buffer size from you set over than 8192 set buffer to: ");
+    MG_LOG_I("");
+    this->setBufferSize(_default_OverBufferSize);
     attr.calculate_chunkSize = _default_bufferSize / 2;
   }
   else
@@ -1670,7 +1722,10 @@ void MAGELLAN_MQTT_device_core::initMQTTClient(String _client_id, uint16_t buffe
     checkConnection();
   else
   {
-    MG_LOG_I("# ThingIdentifier or ThingSecret is incorrect please check");    MG_LOG_I("# can't connect to server");    MG_LOG_I_S("# ThingIdentifier: " + this->thingIden + "\nThingSecret: " + this->thingSecret);    delay(5000);
+    MG_LOG_I("# ThingIdentifier or ThingSecret is incorrect please check");
+    MG_LOG_I("# can't connect to server");
+    MG_LOG_I_S("# ThingIdentifier: " + this->thingIden + "\nThingSecret: " + this->thingSecret);
+    delay(5000);
     ESP.restart();
   }
 }
@@ -1680,7 +1735,10 @@ boolean MAGELLAN_MQTT_device_core::registerToken()
   String topic = "api/v2/thing/" + this->thingIden + "/" + this->thingSecret + "/auth/resp/pta";
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I("# Register Token to magellan");  MG_LOG_I_S("# Register Token Status: " + _debug);  return Sub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I("# Register Token to magellan");
+  MG_LOG_I_S("# Register Token Status: " + _debug);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::report(String payload)
@@ -1689,7 +1747,10 @@ boolean MAGELLAN_MQTT_device_core::report(String payload)
   String topic = "api/v2/thing/" + token + "/report/persist";
   boolean Pub_status = client->publish(topic.c_str(), payload.c_str());
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Report JSON: " + _debug);  MG_LOG_I_S("# [Sensors]: " + payload);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Report JSON: " + _debug);
+  MG_LOG_I_S("# [Sensors]: " + payload);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::report(String key, String value)
@@ -1697,7 +1758,11 @@ boolean MAGELLAN_MQTT_device_core::report(String key, String value)
   String topic = "api/v2/thing/" + token + "/report/persist/pta/?sensor=" + key;
   boolean Pub_status = client->publish(topic.c_str(), value.c_str());
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Report Plaintext: " + _debug);  MG_LOG_I_S("# [key]: " + key);  MG_LOG_I_S("# [value]: " + value);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Report Plaintext: " + _debug);
+  MG_LOG_I_S("# [key]: " + key);
+  MG_LOG_I_S("# [value]: " + value);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::reportSensor()
@@ -1711,7 +1776,8 @@ boolean MAGELLAN_MQTT_device_core::reportSensor()
   }
   else
   {
-    MG_LOG_I("# Can't reportSensor Because Not set function \"void addSensor(key,value)\" before reportSensor");  }
+    MG_LOG_I("# Can't reportSensor Because Not set function \"void addSensor(key,value)\" before reportSensor");
+  }
   return Pub_status;
 }
 
@@ -1720,7 +1786,11 @@ boolean MAGELLAN_MQTT_device_core::ACKControl(String key, String value)
   String topic = "api/v2/thing/" + token + "/report/persist/pta/?sensor=" + key;
   boolean Pub_status = this->client->publish(topic.c_str(), value.c_str());
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# ACKNOWNLEDGE Control Plaintext: " + _debug);  MG_LOG_I_S("# [key]: " + key);  MG_LOG_I_S("# [value]: " + value);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# ACKNOWNLEDGE Control Plaintext: " + _debug);
+  MG_LOG_I_S("# [key]: " + key);
+  MG_LOG_I_S("# [value]: " + value);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::ACKControl(String payload)
@@ -1728,7 +1798,10 @@ boolean MAGELLAN_MQTT_device_core::ACKControl(String payload)
   String topic = "api/v2/thing/" + token + "/report/persist";
   boolean Pub_status = this->client->publish(topic.c_str(), payload.c_str());
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# ACKNOWNLEDGE Control JSON: " + _debug);  MG_LOG_I_S("# [Controls]: " + payload);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# ACKNOWNLEDGE Control JSON: " + _debug);
+  MG_LOG_I_S("# [Controls]: " + payload);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::reportTimestamp(String timestamp, String JSONpayload, unsigned int timestamp_type)
@@ -1740,11 +1813,15 @@ boolean MAGELLAN_MQTT_device_core::reportTimestamp(String timestamp, String JSON
     String payload_ = "[{\"UNIXTS\":" + timestamp + ",\"Sensor\":" + JSONpayload + "}]";
     Pub_status = this->client->publish(topic_.c_str(), payload_.c_str());
     _debug = (Pub_status == true) ? "Success" : "Failure";
-    MG_LOG_I_S("# Report with timestamp: " + _debug);    MG_LOG_I_S("# [Sensors]: " + payload_);    return Pub_status;
+    MG_LOG_I_S("# Report with timestamp: " + _debug);
+    MG_LOG_I_S("# [Sensors]: " + payload_);
+    return Pub_status;
   }
   else
   {
-    MG_LOG_I("# Report with timestamp: Failure");    MG_LOG_I("# Error Empty timestamp or payload");  }
+    MG_LOG_I("# Report with timestamp: Failure");
+    MG_LOG_I("# Error Empty timestamp or payload");
+  }
   return Pub_status;
 }
 
@@ -1753,7 +1830,10 @@ boolean MAGELLAN_MQTT_device_core::reportClientConfig(String payload)
   String topic = "api/v2/thing/" + token + "/config/persist";
   boolean Pub_status = this->client->publish(topic.c_str(), payload.c_str());
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Save ClientConfig: " + _debug);  MG_LOG_I_S("# [ClientConfigs]: " + payload);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Save ClientConfig: " + _debug);
+  MG_LOG_I_S("# [ClientConfigs]: " + payload);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::requestToken()
@@ -1763,7 +1843,8 @@ boolean MAGELLAN_MQTT_device_core::requestToken()
   {
     if (cnt_attempt >= limit_attempt)
     {
-      MG_LOG_I_S("Device Attempt to request token more than " + String(limit_attempt) + " time. restart board");      delay(1000);
+      MG_LOG_I_S("Device Attempt to request token more than " + String(limit_attempt) + " time. restart board");
+      delay(1000);
       ESP.restart();
     }
     if (millis() - previouseMillis > 10000)
@@ -1773,10 +1854,13 @@ boolean MAGELLAN_MQTT_device_core::requestToken()
       Pub_status = this->client->publish(topic.c_str(), " ");
       _debug = (Pub_status == true) ? "Success" : "Failure";
       // Serial.println("topic :" + topic);
-      MG_LOG_I_S("# Request Token: " + _debug);      if (cnt_attempt > 0)
+      MG_LOG_I_S("# Request Token: " + _debug);
+      if (cnt_attempt > 0)
       {
-        MG_LOG_I_S(" Attempt >> " + String(cnt_attempt - 1) + " time");      }
-      MG_LOG_I("");      cnt_attempt++;
+        MG_LOG_I_S(" Attempt >> " + String(cnt_attempt - 1) + " time");
+      }
+      MG_LOG_I("");
+      cnt_attempt++;
     }
   }
   return Pub_status;
@@ -1784,7 +1868,8 @@ boolean MAGELLAN_MQTT_device_core::requestToken()
 
 boolean MAGELLAN_MQTT_device_core::setBufferSize(uint16_t size)
 {
-  MG_LOG_I_S("# set BufferSize: " + String(size));  return this->client->setBufferSize(size);
+  MG_LOG_I_S("# set BufferSize: " + String(size));
+  return this->client->setBufferSize(size);
 }
 
 boolean MAGELLAN_MQTT_device_core::heartbeat()
@@ -1792,7 +1877,9 @@ boolean MAGELLAN_MQTT_device_core::heartbeat()
   String topic = "api/v2/thing/" + token + "/heartbeat";
   boolean Pub_status = this->client->publish(topic.c_str(), " ");
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Heartbeat Trigger: " + _debug);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Heartbeat Trigger: " + _debug);
+  return Pub_status;
 }
 
 void MAGELLAN_MQTT_device_core::heartbeat(unsigned int triger_ms)
@@ -1809,7 +1896,9 @@ void MAGELLAN_MQTT_device_core::heartbeat(unsigned int triger_ms)
 
 void MAGELLAN_MQTT_device_core::setManualToken(String _token)
 {
-  MG_LOG_I("# SET MANUAL TOKEN =====");  MG_LOG_I_S("#Token: " + _token);  _token.trim();
+  MG_LOG_I("# SET MANUAL TOKEN =====");
+  MG_LOG_I_S("#Token: " + _token);
+  _token.trim();
   if (_token.length() >= 36)
   {
     this->token = _token;
@@ -1824,7 +1913,9 @@ boolean MAGELLAN_MQTT_device_core::reqControlJSON()
   String topic = "api/v2/thing/" + token + "/delta/req";
   boolean Pub_status = this->client->publish(topic.c_str(), " ");
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Request Control [JSON]: " + _debug);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Request Control [JSON]: " + _debug);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::reqControl(String key)
@@ -1832,7 +1923,9 @@ boolean MAGELLAN_MQTT_device_core::reqControl(String key)
   String topic = "api/v2/thing/" + token + "/delta/req/?sensor=" + key;
   boolean Pub_status = this->client->publish(topic.c_str(), " ");
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Request Control Plaintext by [Key]: \"" + key + "\": " + _debug);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Request Control Plaintext by [Key]: \"" + key + "\": " + _debug);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::reqConfigJSON()
@@ -1840,7 +1933,9 @@ boolean MAGELLAN_MQTT_device_core::reqConfigJSON()
   String topic = "api/v2/thing/" + token + "/config/req";
   boolean Pub_status = this->client->publish(topic.c_str(), " ");
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Request Config [JSON]: " + _debug);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Request Config [JSON]: " + _debug);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::reqConfig(String key)
@@ -1848,7 +1943,9 @@ boolean MAGELLAN_MQTT_device_core::reqConfig(String key)
   String topic = "api/v2/thing/" + token + "/config/req/?config=" + key; // fact C c
   boolean Pub_status = this->client->publish(topic.c_str(), " ");
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Request Config Plaintext [Key]: \"" + key + "\": " + _debug);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Request Config Plaintext [Key]: \"" + key + "\": " + _debug);
+  return Pub_status;
 }
 
 void MAGELLAN_MQTT_device_core::getControl(String key, ctrl_handleCallback ctrl_callback)
@@ -2075,14 +2172,17 @@ boolean MAGELLAN_MQTT_device_core::registerResponseReport(int format)
     topic = "api/v2/thing/" + token + "/report/resp";
     break;
   default:
-    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");    topic = "api/v2/thing/" + token + "/report/resp";
+    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");
+    topic = "api/v2/thing/" + token + "/report/resp";
     break;
   }
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  // Serial.println("# RegisterRESP Report: "+ _debug);
-  MG_LOG_I_S("# Subscribe Response Report: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------"); // Serial.println("# RegisterRESP Report: "+ _debug);
+  MG_LOG_I_S("# Subscribe Response Report: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::registerResponseReportTimestamp()
@@ -2090,8 +2190,9 @@ boolean MAGELLAN_MQTT_device_core::registerResponseReportTimestamp()
   String topic = "api/v2/thing/" + token + "/report/timestamp/resp";
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  // Serial.println("# RegisterRESP ReportTimestamp: "+ _debug);
-  MG_LOG_I_S("# Subscribe Response ReportTimestamp: " + _debug);  return Sub_status;
+  MG_LOG_I("-------------------------------"); // Serial.println("# RegisterRESP ReportTimestamp: "+ _debug);
+  MG_LOG_I_S("# Subscribe Response ReportTimestamp: " + _debug);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::registerResponseHeartbeat(int format)
@@ -2106,14 +2207,17 @@ boolean MAGELLAN_MQTT_device_core::registerResponseHeartbeat(int format)
     topic = "api/v2/thing/" + token + "/heartbeat/resp";
     break;
   default:
-    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");    topic = "api/v2/thing/" + token + "/heartbeat/resp";
+    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");
+    topic = "api/v2/thing/" + token + "/heartbeat/resp";
     break;
   }
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  // Serial.println("# RegisterRESP Heartbeat: "+ _debug);
-  MG_LOG_I_S("# Subscribe Response Heartbeat: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------"); // Serial.println("# RegisterRESP Heartbeat: "+ _debug);
+  MG_LOG_I_S("# Subscribe Response Heartbeat: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::registerConfig(String key)
@@ -2121,8 +2225,9 @@ boolean MAGELLAN_MQTT_device_core::registerConfig(String key)
   String topic = "api/v2/thing/" + token + "/config/resp/pta/?config=" + key; // fact C c
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  // Serial.println("# Register Server Config [Key]: \""+key+"\" Register: "+ _debug);
-  MG_LOG_I_S("# Subscribe ServerConfig [Key]: \"" + key + "\" Subscribe: " + _debug);  return Sub_status;
+  MG_LOG_I("-------------------------------"); // Serial.println("# Register Server Config [Key]: \""+key+"\" Register: "+ _debug);
+  MG_LOG_I_S("# Subscribe ServerConfig [Key]: \"" + key + "\" Subscribe: " + _debug);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::registerConfig(int format)
@@ -2137,14 +2242,17 @@ boolean MAGELLAN_MQTT_device_core::registerConfig(int format)
     topic = "api/v2/thing/" + token + "/config/resp";
     break;
   default:
-    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");    topic = "api/v2/thing/" + token + "/config/resp";
+    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");
+    topic = "api/v2/thing/" + token + "/config/resp";
     break;
   }
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  // Serial.println("# Register Server Config: "+ _debug);
-  MG_LOG_I_S("# Subscribe ServerConfig: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------"); // Serial.println("# Register Server Config: "+ _debug);
+  MG_LOG_I_S("# Subscribe ServerConfig: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::getTimestamp()
@@ -2152,7 +2260,9 @@ boolean MAGELLAN_MQTT_device_core::getTimestamp()
   String topic = "api/v2/server/dateTime/req";
   boolean Pub_status = this->client->publish(topic.c_str(), " ");
   _debug = (Pub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Get ServerTime Request: " + _debug);  return Pub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Get ServerTime Request: " + _debug);
+  return Pub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::registerTimestamp(int format)
@@ -2167,15 +2277,18 @@ boolean MAGELLAN_MQTT_device_core::registerTimestamp(int format)
     topic = "api/v2/server/dateTime/resp";
     break;
   default:
-    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");    topic = "api/v2/server/dateTime/resp";
+    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");
+    topic = "api/v2/server/dateTime/resp";
     break;
   }
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  MG_LOG_I("# Subscribe Timestamp magellan");  // Serial.println(F("# RegisterTimestamp magellan"));
-  MG_LOG_I_S("# Subscribe ServerTime: " + _debug);  // Serial.println("# RegisterTimestamp: "+ _debug);
-  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I("# Subscribe Timestamp magellan");      // Serial.println(F("# RegisterTimestamp magellan"));
+  MG_LOG_I_S("# Subscribe ServerTime: " + _debug); // Serial.println("# RegisterTimestamp: "+ _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::registerControl(int format)
@@ -2190,14 +2303,17 @@ boolean MAGELLAN_MQTT_device_core::registerControl(int format)
     topic = "api/v2/thing/" + token + "/delta/resp";
     break;
   default:
-    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");    topic = "api/v2/thing/" + token + "/delta/resp";
+    MG_LOG_I("out of length resp args format support [\"0\" or PLAINTEXT] is Plaint text(default) and [\"1\" or JSON]");
+    topic = "api/v2/thing/" + token + "/delta/resp";
     break;
   }
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  // Serial.println("# RegisterControl: "+ _debug);
-  MG_LOG_I_S("# Subscribe Control: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------"); // Serial.println("# RegisterControl: "+ _debug);
+  MG_LOG_I_S("# Subscribe Control: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::registerControl(String key)
@@ -2205,8 +2321,10 @@ boolean MAGELLAN_MQTT_device_core::registerControl(String key)
   String topic = "api/v2/thing/" + token + "/delta/resp/pta/?sensor=" + key; // fact S s
   boolean Sub_status = this->client->subscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
-  MG_LOG_I_S(topic);  MG_LOG_I("-------------------------------");  // Serial.println("# RegisterControl [Key]: \""+key+"\" Register: "+ _debug);
-  MG_LOG_I_S("# Subscribe Control [Key]: \"" + key + "\" Subscribe: " + _debug);  return Sub_status;
+  MG_LOG_I_S(topic);
+  MG_LOG_I("-------------------------------"); // Serial.println("# RegisterControl [Key]: \""+key+"\" Register: "+ _debug);
+  MG_LOG_I_S("# Subscribe Control [Key]: \"" + key + "\" Subscribe: " + _debug);
+  return Sub_status;
 }
 
 void MAGELLAN_MQTT_device_core::thingRegister()
@@ -2233,17 +2351,20 @@ void MAGELLAN_MQTT_device_core::registerList(func_callback_registerList cb_regis
   {
     if (attr.inProcessOTA)
     {
-      MG_LOG_I("# Subscribes List is terminated when Inprocess OTA");    }
+      MG_LOG_I("# Subscribes List is terminated when Inprocess OTA");
+    }
     else
     {
-      MG_LOG_I("# Subscribes List");      cb_regisList();
+      MG_LOG_I("# Subscribes List");
+      cb_regisList();
       if (!attr.flagAutoOTA)
       {
         sub_InfoOTA();
       }
     }
     attr.triggerRemainSub = false;
-    MG_LOG_I("#============================");  }
+    MG_LOG_I("#============================");
+  }
 }
 
 boolean firstTimedoing = true;
@@ -2267,7 +2388,8 @@ JsonObject MAGELLAN_MQTT_device_core::deserialJson(String jsonContent)
     DeserializationError error = deserializeJson(docJson, jsonContent);
     buffer = docJson.as<JsonObject>();
     if (error)
-      MG_LOG_I_S("# Error to DeserializeJson Control");  }
+      MG_LOG_I_S("# Error to DeserializeJson Control");
+  }
   return buffer;
 }
 
@@ -2295,7 +2417,7 @@ String MAGELLAN_MQTT_device_core::deserialControlJSON(String jsonContent)
 
 void MAGELLAN_MQTT_device_core::updateSensor(String key, String value, JsonDocument &ref_docs)
 {
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
   int len = value.length();
   char *c_value = new char[len + 1];
   std::copy(value.begin(), value.end(), c_value);
@@ -2329,7 +2451,7 @@ void MAGELLAN_MQTT_device_core::updateSensor(String key, boolean value, JsonDocu
 
 void MAGELLAN_MQTT_device_core::addSensor(String key, String value, JsonDocument &ref_docs)
 {
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
   int len = value.length();
   char *c_value = new char[len + 1];
   std::copy(value.begin(), value.end(), c_value);
@@ -2367,12 +2489,13 @@ void MAGELLAN_MQTT_device_core::addSensor(String key, boolean value, JsonDocumen
 
 void MAGELLAN_MQTT_device_core::remove(String key, JsonDocument &ref_docs)
 {
-  MG_LOG_I_S("Remove [Key]: " + key);  ref_docs.remove(key);
+  MG_LOG_I_S("Remove [Key]: " + key);
+  ref_docs.remove(key);
 }
 
 boolean MAGELLAN_MQTT_device_core::findKey(String key, JsonDocument &ref_docs)
 {
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
   return ref_docs.containsKey(key);
 #else
   return !ref_docs[key.c_str()].isNull();
@@ -2382,7 +2505,7 @@ boolean MAGELLAN_MQTT_device_core::findKey(String key, JsonDocument &ref_docs)
 String MAGELLAN_MQTT_device_core::buildSensorJSON(JsonDocument &ref_docs)
 {
   String bufferJsonStr;
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
   size_t mmr_usage = ref_docs.memoryUsage();
   size_t max_size = ref_docs.memoryPool().capacity();
   size_t safety_size = max_size * (0.97);
@@ -2400,33 +2523,36 @@ String MAGELLAN_MQTT_device_core::buildSensorJSON(JsonDocument &ref_docs)
 #else
   // v7: JsonDocument is dynamic; measureJson() gives the actual serialized byte count.
   // Using a fixed max_size so the overflow guard has a meaningful ceiling.
-  const size_t max_size = 8192;
-  size_t mmr_usage = measureJson(ref_docs);
-  size_t safety_size = max_size * (0.97);
-  if (mmr_usage >= safety_size)
-  {
-    bufferJsonStr = "null";
-    MG_LOG_I_S("# [Overload memory toJSONString] *Maximum Safety size: " + String(safety_size));
-  }
-  else
-  {
-    serializeJson(ref_docs, bufferJsonStr);
-    MG_LOG_I_S("# [to JSON String Key is]: " + String(ref_docs.size()) + " key");
-  }
-  MG_LOG_I_S("# JSON size: " + String(mmr_usage) + "/" + String(safety_size) + " from(" + String(max_size) + ")");
+  // const size_t max_size = 8192;
+  // size_t mmr_usage = measureJson(ref_docs);
+  // size_t safety_size = max_size * (0.97);
+  // if (mmr_usage >= safety_size)
+  // {
+  //   bufferJsonStr = "null";
+  //   MG_LOG_I_S("# [Overload memory toJSONString] *Maximum Safety size: " + String(safety_size));
+  // }
+  // else
+  // {
+  serializeJson(ref_docs, bufferJsonStr);
+  MG_LOG_I_S("# [to JSON[V7] String Key is]: " + String(ref_docs.size()) + " key");
+  // }
+  // MG_LOG_I_S("# JSON size: " + String(mmr_usage) + "/" + String(safety_size) + " from(" + String(max_size) + ")");
 #endif
   return bufferJsonStr;
 }
 
 void MAGELLAN_MQTT_device_core::adjustBufferSensor(size_t sizeJSONbuffer)
 {
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
   delete attr.docSensor;
   attr.docSensor = new DynamicJsonDocument(sizeJSONbuffer);
 #else
-  if (attr.docSensor == NULL) {
+  if (attr.docSensor == NULL)
+  {
     attr.docSensor = new JsonDocument();
-  } else {
+  }
+  else
+  {
     attr.docSensor->clear();
   }
 #endif
@@ -2434,7 +2560,7 @@ void MAGELLAN_MQTT_device_core::adjustBufferSensor(size_t sizeJSONbuffer)
 
 int MAGELLAN_MQTT_device_core::readBufferSensor(JsonDocument &ref_docs)
 {
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
   return ref_docs.memoryPool().capacity();
 #else
   return (int)measureJson(ref_docs);
@@ -2443,8 +2569,10 @@ int MAGELLAN_MQTT_device_core::readBufferSensor(JsonDocument &ref_docs)
 
 void MAGELLAN_MQTT_device_core::clearSensorBuffer(JsonDocument &ref_docs)
 {
-  MG_LOG_I("# [Clear JSON buffer]");  ref_docs.clear();
-  MG_LOG_I("-------------------------------");}
+  MG_LOG_I("# [Clear JSON buffer]");
+  ref_docs.clear();
+  MG_LOG_I("-------------------------------");
+}
 
 boolean MAGELLAN_MQTT_device_core::registerInfoOTA()
 {
@@ -2551,12 +2679,14 @@ void MAGELLAN_MQTT_device_core::activeOTA(size_t chunk_size, boolean useChecksum
 }
 void MAGELLAN_MQTT_device_core::setChecksum(String md5Checksum)
 {
-  MG_LOG_I_S("# Set Checksum md5: " + md5Checksum + " Status:" + (Update.setMD5(md5Checksum.c_str()) == true ? " Success" : " Fail"));}
+  MG_LOG_I_S("# Set Checksum md5: " + md5Checksum + " Status:" + (Update.setMD5(md5Checksum.c_str()) == true ? " Success" : " Fail"));
+}
 
 void MAGELLAN_MQTT_device_core::setChunkSize(size_t Chunksize)
 {
   attr.chunk_size = Chunksize;
-  MG_LOG_I_S("# Set Chunk size: " + String(attr.chunk_size));}
+  MG_LOG_I_S("# Set Chunk size: " + String(attr.chunk_size));
+}
 
 // unsigned long prv_cb_timeout_millis = 0;
 
@@ -2567,12 +2697,14 @@ void checkTimeoutReq_fw_download()
     unsigned long differentTime = millis() - attr.prv_cb_timeout_millis;
     if (differentTime > 60000 && !attemp_download_1)
     {
-      MG_LOG_I_S("#Attemp resume download 1 after checktimeout 1 minute");      pub_Download(attr.fw_count_chunk, attr.chunk_size);
+      MG_LOG_I_S("#Attemp resume download 1 after checktimeout 1 minute");
+      pub_Download(attr.fw_count_chunk, attr.chunk_size);
       attemp_download_1 = true;
     }
     if (differentTime > 120000 && !attemp_download_2)
     {
-      MG_LOG_I_S("#Attemp resume download 2 after checktimeout 2 minute");      pub_Download(attr.fw_count_chunk, attr.chunk_size);
+      MG_LOG_I_S("#Attemp resume download 2 after checktimeout 2 minute");
+      pub_Download(attr.fw_count_chunk, attr.chunk_size);
       attemp_download_2 = true;
     }
     if (differentTime > attr.timeout_req_download_fw)
@@ -2580,7 +2712,8 @@ void checkTimeoutReq_fw_download()
       pub_UpdateProgress("FAILED", "{\"errordescription\":\"Downloading firmware " + MAGELLAN_MQTT_device_core::OTA_info.firmwareVersion + " is timeout on chunk (" + String(attr.current_chunk) + "/" + String(attr.totalChunk) + ")\"}");
       configOTAFile.saveSuccessOrFail("fail");
 
-      MG_LOG_I_S("#device must restart timeout from request firmware dowload " + String(attr.timeout_req_download_fw / 60000) + " minute");      delay(5000);
+      MG_LOG_I_S("#device must restart timeout from request firmware dowload " + String(attr.timeout_req_download_fw / 60000) + " minute");
+      delay(5000);
       ESP.restart();
     }
     // Serial.println("Counting Timeout: "+String(diferentTime/1000));
@@ -2616,10 +2749,12 @@ void MAGELLAN_MQTT_device_core::handleOTA(boolean OTA_after_getInfo)
   checkTimeoutCheckUpdate();
   if (attr.triggerRemainOTA)
   {
-    MG_LOG_I("# Active handleOTA");    registerInfoOTA();
+    MG_LOG_I("# Active handleOTA");
+    registerInfoOTA();
     if (attr.flagAutoOTA)
       registerDownloadOTA();
-    MG_LOG_I("#============================");    if (attr.inProcessOTA) // if get fw in hook fw will auto count and request dowload fw
+    MG_LOG_I("#============================");
+    if (attr.inProcessOTA) // if get fw in hook fw will auto count and request dowload fw
     {
       attr.flag_remain_ota = true;
       attr.remain_ota_fw_info_match = false;
@@ -2659,7 +2794,9 @@ void MAGELLAN_MQTT_device_core::handleOTA(boolean OTA_after_getInfo)
         setChecksum(MAGELLAN_MQTT_device_core::OTA_info.checksum);
       else
       {
-        MG_LOG_I("#[Warning] Can't set checksum because algorithm checksum is not \"md5\"");        MG_LOG_I("#[Warning] But OTA Process still working without checksum ");        attr.using_Checksum = false;
+        MG_LOG_I("#[Warning] Can't set checksum because algorithm checksum is not \"md5\"");
+        MG_LOG_I("#[Warning] But OTA Process still working without checksum ");
+        attr.using_Checksum = false;
       }
     }
     if (OTA_after_getInfo && !attr.isFirmwareUptodate) // auto request OTA after get fw information
@@ -2670,7 +2807,10 @@ void MAGELLAN_MQTT_device_core::handleOTA(boolean OTA_after_getInfo)
   }
   if (attr.inProcessOTA && !remind_unsub_when_inProcessOTA)
   {
-    MG_LOG_I("=================================================");    MG_LOG_I("# Inprocess OTA terminate other incoming message");    MG_LOG_I("# Unsubscribe unuse function");    if (attr.ctrl_regis_key || attr.ctrl_regis_pta)
+    MG_LOG_I("=================================================");
+    MG_LOG_I("# Inprocess OTA terminate other incoming message");
+    MG_LOG_I("# Unsubscribe unuse function");
+    if (attr.ctrl_regis_key || attr.ctrl_regis_pta)
     {
       unregisterControl(PLAINTEXT);
     }
@@ -2697,7 +2837,8 @@ void MAGELLAN_MQTT_device_core::handleOTA(boolean OTA_after_getInfo)
       unregisterTimestamp(JSON);
     }
     remind_unsub_when_inProcessOTA = true;
-    MG_LOG_I("=================================================");  }
+    MG_LOG_I("=================================================");
+  }
 }
 ////////////////// Unsub ///////////
 boolean MAGELLAN_MQTT_device_core::unregisterControl(int format)
@@ -2718,15 +2859,20 @@ boolean MAGELLAN_MQTT_device_core::unregisterControl(int format)
   boolean Sub_status = this->client->unsubscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  // Serial.println("# RegisterControl: "+ _debug);
-  MG_LOG_I_S("# Unsubscribe Control: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------"); // Serial.println("# RegisterControl: "+ _debug);
+  MG_LOG_I_S("# Unsubscribe Control: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 } //
 boolean MAGELLAN_MQTT_device_core::unregisterControl(String key)
 {
   String topic = "api/v2/thing/" + token + "/delta/resp/pta/?sensor=" + key; // fact S s
   boolean Sub_status = this->client->unsubscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
-  MG_LOG_I_S(topic);  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Unsubscribe Control [Key]: \"" + key + "\" Unsubscribe: " + _debug);  return Sub_status;
+  MG_LOG_I_S(topic);
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Unsubscribe Control [Key]: \"" + key + "\" Unsubscribe: " + _debug);
+  return Sub_status;
 } //
 boolean MAGELLAN_MQTT_device_core::unregisterConfig(int format)
 {
@@ -2746,14 +2892,19 @@ boolean MAGELLAN_MQTT_device_core::unregisterConfig(int format)
   boolean Sub_status = this->client->unsubscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Unsubscribe ServerConfig: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Unsubscribe ServerConfig: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 } //
 boolean MAGELLAN_MQTT_device_core::unregisterConfig(String key)
 {
   String topic = "api/v2/thing/" + token + "/config/resp/pta/?config=" + key; // fact C c
   boolean Sub_status = this->client->unsubscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Unsubscribe ServerConfig [Key]: \"" + key + "\" Unsubscribe: " + _debug);  return Sub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Unsubscribe ServerConfig [Key]: \"" + key + "\" Unsubscribe: " + _debug);
+  return Sub_status;
 } //
 boolean MAGELLAN_MQTT_device_core::unregisterTimestamp(int format)
 {
@@ -2773,7 +2924,10 @@ boolean MAGELLAN_MQTT_device_core::unregisterTimestamp(int format)
   boolean Sub_status = this->client->unsubscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Unsubscribe ServerTime: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Unsubscribe ServerTime: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 } //
 boolean MAGELLAN_MQTT_device_core::unregisterResponseReport(int format)
 {
@@ -2793,14 +2947,19 @@ boolean MAGELLAN_MQTT_device_core::unregisterResponseReport(int format)
   boolean Sub_status = this->client->unsubscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Unsubscribe Response Report: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Unsubscribe Response Report: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 }
 boolean MAGELLAN_MQTT_device_core::unregisterResponseReportTimestamp()
 {
   String topic = "api/v2/thing/" + token + "/report/timestamp/resp";
   boolean Sub_status = this->client->unsubscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Unsubscribe Response ReportTimestamp: " + _debug);  return Sub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Unsubscribe Response ReportTimestamp: " + _debug);
+  return Sub_status;
 }
 
 boolean MAGELLAN_MQTT_device_core::unregisterResponseHeartbeat(int format)
@@ -2821,7 +2980,10 @@ boolean MAGELLAN_MQTT_device_core::unregisterResponseHeartbeat(int format)
   boolean Sub_status = this->client->unsubscribe(topic.c_str());
   _debug = (Sub_status == true) ? "Success" : "Failure";
   String respType = (format == 0) ? "Plaintext" : "JSON";
-  MG_LOG_I("-------------------------------");  MG_LOG_I_S("# Unsubscribe Response Heartbeat: " + _debug);  MG_LOG_I_S("# Response type: " + respType);  return Sub_status;
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Unsubscribe Response Heartbeat: " + _debug);
+  MG_LOG_I_S("# Response type: " + respType);
+  return Sub_status;
 }
 ////////////////// Unsub //////////
 
@@ -2846,11 +3008,20 @@ boolean MAGELLAN_MQTT_device_core::acceptEndPoint(String payload)
       _centric.endPoint_IP = buff_ip;
       _centric.endPoint_PORT = buff_port;
       acceptStatus = true;
-      MG_LOG_I("## NEW ZONE AVAILABLE #######");      MG_LOG_I_S("# Centric IP >>: " + _centric.endPoint_IP);      MG_LOG_I_S("# Centric Domain >>: " + _centric.endPoint_DOMAIN);      MG_LOG_I_S("# Centric Port >>: " + String(_centric.endPoint_PORT));      MG_LOG_I("#############################");      cnt_attempt = 0;
+      MG_LOG_I("## NEW ZONE AVAILABLE #######");
+      MG_LOG_I_S("# Centric IP >>: " + _centric.endPoint_IP);
+      MG_LOG_I_S("# Centric Domain >>: " + _centric.endPoint_DOMAIN);
+      MG_LOG_I_S("# Centric Port >>: " + String(_centric.endPoint_PORT));
+      MG_LOG_I("#############################");
+      cnt_attempt = 0;
     }
     else
     {
-      MG_LOG_I("# Fail to Get Endpoint form centric");      MG_LOG_I("# Please check the thing device is activated");      MG_LOG_I_S("# response: ");      MG_LOG_I_S(payload);    }
+      MG_LOG_I("# Fail to Get Endpoint form centric");
+      MG_LOG_I("# Please check the thing device is activated");
+      MG_LOG_I_S("# response: ");
+      MG_LOG_I_S(payload);
+    }
   }
   return acceptStatus;
 }
@@ -2862,7 +3033,8 @@ boolean MAGELLAN_MQTT_device_core::requestEndpoint()
   {
     if (cnt_attempt >= limit_attempt)
     {
-      MG_LOG_I_S("Device Attempt to request ENDPOINT more than " + String(limit_attempt) + " time. restart board");      delay(1000);
+      MG_LOG_I_S("Device Attempt to request ENDPOINT more than " + String(limit_attempt) + " time. restart board");
+      delay(1000);
       ESP.restart();
     }
     if (millis() - previouseMillis > 10000)
@@ -2871,10 +3043,13 @@ boolean MAGELLAN_MQTT_device_core::requestEndpoint()
       String topic = "api/v2/things/" + thingIden + "/" + thingSecret + "/server/destination/request";
       Pub_status = this->client->publish(topic.c_str(), " ");
       _debug = (Pub_status == true) ? "Success" : "Failure";
-      MG_LOG_I_S("# Request Endpoint: " + _debug);      if (cnt_attempt > 0)
+      MG_LOG_I_S("# Request Endpoint: " + _debug);
+      if (cnt_attempt > 0)
       {
-        MG_LOG_I_S(" Attempt >> " + String(cnt_attempt - 1) + " time");      }
-      MG_LOG_I("");      cnt_attempt++;
+        MG_LOG_I_S(" Attempt >> " + String(cnt_attempt - 1) + " time");
+      }
+      MG_LOG_I("");
+      cnt_attempt++;
     }
   }
   return Pub_status;
@@ -2882,11 +3057,13 @@ boolean MAGELLAN_MQTT_device_core::requestEndpoint()
 
 void MAGELLAN_MQTT_device_core::getEndPoint()
 {
-  MG_LOG_I("# REQUEST ENDPOINT");  while (!flagRegisterEndPoint)
+  MG_LOG_I("# REQUEST ENDPOINT");
+  while (!flagRegisterEndPoint)
   {
     String topic = "api/v2/things/" + this->thingIden + "/" + this->thingSecret + "/server/destination/response";
     this->flagRegisterEndPoint = this->client->subscribe(topic.c_str());
-    MG_LOG_I_S("# Register destination server: " + String(flagRegisterEndPoint ? "Success" : "Fail"));  }
+    MG_LOG_I_S("# Register destination server: " + String(flagRegisterEndPoint ? "Success" : "Fail"));
+  }
   while (!flagGetEndPoint)
   {
     this->client->loop();
@@ -2906,8 +3083,10 @@ void MAGELLAN_MQTT_device_core::getEndPoint()
   }
   if (flagGetEndPoint)
   {
-    MG_LOG_I("# Disconnect from Centric");    this->client->disconnect();
-    MG_LOG_I("# Connect to new zone");    srand(time(NULL));
+    MG_LOG_I("# Disconnect from Centric");
+    this->client->disconnect();
+    MG_LOG_I("# Connect to new zone");
+    srand(time(NULL));
     int randnum = rand() % 10000;   // generate number concat in Client id
     int randnum_2 = rand() % 10000; // generate number concat in Client id
     String client_idBuff = "OTHER_" + this->thingIden + "_" + String(randnum) + "_" + String(randnum_2) + "_" + String(lib_ver);
@@ -2928,24 +3107,33 @@ void MAGELLAN_MQTT_device_core::magellanCentric()
       int randnum_2 = rand() % 10000; // generate number concat in Client id
       String client_idBuff = "Centric_Other_" + this->thingIden + "_" + String(randnum) + "_" + String(randnum_2) + "_" + String(lib_ver);
       client_id = client_idBuff;
-      MG_LOG_I("#Attempting connection ...");      this->host = _host_centric;
+      MG_LOG_I("#Attempting connection ...");
+      this->host = _host_centric;
       this->port = mgCentricPort; // auto_assigned Client ID with ThingIdent
       this->client->setBufferSize(this->_default_bufferSize);
       this->setCallback_msgHandle();
       this->client->setServer(this->host.c_str(), this->port);
-      MG_LOG_I_S("Connecting Centric Magellan on: " + String(this->host) + ", Port: " + String(this->port));      String thisIdenCentric = "Centric." + this->thingIden;
+      MG_LOG_I_S("Connecting Centric Magellan on: " + String(this->host) + ", Port: " + String(this->port));
+      String thisIdenCentric = "Centric." + this->thingIden;
       if (this->client->connect(client_idBuff.c_str(), thisIdenCentric.c_str(), this->thingSecret.c_str()))
       {
-        MG_LOG_I_S("Client id : " + client_idBuff + " is connected");        recon_attempt = 0;
+        MG_LOG_I_S("Client id : " + client_idBuff + " is connected");
+        recon_attempt = 0;
       }
 
       else
       {
-        MG_LOG_I_S("failed, reconnect =");        MG_LOG_I_S(this->client->state());        MG_LOG_I(" try again in 5 seconds");        MG_LOG_I_S("Count Attemp Reconnect: ");        recon_attempt++;
-        MG_LOG_I_S(recon_attempt);        delay(5000);
+        MG_LOG_I_S("failed, reconnect =");
+        MG_LOG_I_S(this->client->state());
+        MG_LOG_I(" try again in 5 seconds");
+        MG_LOG_I_S("Count Attemp Reconnect: ");
+        recon_attempt++;
+        MG_LOG_I_S(recon_attempt);
+        delay(5000);
         if (recon_attempt >= MAXrecon_attempt)
         {
-          MG_LOG_I_S(" attempt to connect more than: " + String(MAXrecon_attempt) + " Restart Board");          ESP.restart();
+          MG_LOG_I_S(" attempt to connect more than: " + String(MAXrecon_attempt) + " Restart Board");
+          ESP.restart();
         }
       }
     }

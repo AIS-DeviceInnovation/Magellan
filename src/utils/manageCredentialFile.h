@@ -13,11 +13,7 @@
 #endif
 #include <vector>
 #include "FileSystem.h"
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
-#include "./ArduinoJson-v6.18.3.h"
-#else
-#include <ArduinoJson.h>
-#endif
+#include "./MAGELLAN_LIB_CONF.h"
 #include "./manageConfigOTAFile.h"
 #include "utils/Generate_Credential.h"
 #include "./MAGELLAN_MQTT_device_core.h"
@@ -26,7 +22,7 @@ class manageCredentialFile: private Generate_Credential
 private:
     const char* credentialPath = "/credentialFile.json";
     const char* prev_credentialPath = "/prv_credentialFile.json";
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
     StaticJsonDocument<256> CredDoc;
 #else
     JsonDocument CredDoc;

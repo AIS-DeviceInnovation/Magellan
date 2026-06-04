@@ -11,11 +11,7 @@ Released for private usage.
 #include <functional>
 #include <Client.h>
 #include "./PubSubClient.h"
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
-#include "./ArduinoJson-v6.18.3.h"
-#else
-#include <ArduinoJson.h>
-#endif
+#include "./MAGELLAN_LIB_CONF.h"
 #include "./FileSystem.h"
 #include "./manageConfigOTAFile.h"
 #include "./manageCredentialFile.h"
@@ -91,7 +87,7 @@ public:
   static size_t calculate_chunkSize;
   static boolean inProcessOTA;
   static boolean startReqDownloadOTA;
-#ifndef USE_ARDUINOJSON7_DEPENDENCY
+#if !MAGELLAN_USE_ARDUINOJSON7
   static StaticJsonDocument<512> docClientConf;
   static DynamicJsonDocument *adjDoc;
   static DynamicJsonDocument *docSensor;

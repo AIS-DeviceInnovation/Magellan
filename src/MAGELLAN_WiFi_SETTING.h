@@ -56,8 +56,8 @@ void connectWiFi(MAGELLAN_WIFI_SETTING &sWIFI_SETTING)
     while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
       delay(200);
     }
-    Serial.print(F("\n# DNS Server: "));
-    Serial.println(WiFi.dnsIP());
+    // Serial.print(F("\n# DNS Server: "));
+    // Serial.println(WiFi.dnsIP());
   }
   // ESP32: verify the assigned DNS can resolve external hostnames.
   // If not, fall back to Google DNS (8.8.8.8) so the MQTT broker hostname resolves.
@@ -85,8 +85,8 @@ void connectWiFi(MAGELLAN_WIFI_SETTING &sWIFI_SETTING)
     while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
       delay(200);
     }
-    Serial.print(F("\n# DNS Server: "));
-    Serial.println(WiFi.dnsIP());
+    // Serial.print(F("\n# DNS Server: "));
+    // Serial.println(WiFi.dnsIP());
   }
 #endif
   Serial.println(F("\n# Wifi Connected!"));
@@ -132,8 +132,8 @@ void connectWiFi(String SSID, String PASS)
     while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
       delay(200);
     }
-    Serial.print(F("\n# DNS Server: "));
-    Serial.println(WiFi.dnsIP());
+    // Serial.print(F("\n# DNS Server: "));
+    // Serial.println(WiFi.dnsIP());
   }
   // ESP32: verify the assigned DNS can resolve external hostnames.
   // If not, fall back to Google DNS (8.8.8.8) so the MQTT broker hostname resolves.
@@ -162,8 +162,8 @@ void connectWiFi(String SSID, String PASS)
     while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
       delay(200);
     }
-    Serial.print(F("\n# DNS Server: "));
-    Serial.println(WiFi.dnsIP());
+    // Serial.print(F("\n# DNS Server: "));
+    // Serial.println(WiFi.dnsIP());
   }
 #endif
   Serial.println(F("\n# Wifi Connected!"));

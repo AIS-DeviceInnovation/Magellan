@@ -5,7 +5,6 @@
 Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจรของ ประเทศไทยที่จัดทำขึ้นเพื่อส่งเสริมสนับสนุนบุคคลากรหน่วยงานหรือองค์กรต่างๆ ในประเทศให้สามารถศึกษาวิจัยและพัฒนาความรู้ความสามารถจนสามารถนำไปใช้พัฒนาเป็นสินค้า บริการ หรือนวัตกรรม ด้าน IoT แบบเต็มรูปแบบ อีกทั้งยังเป็นแพลตฟอร์มตั้งต้นสำหรับนักพัฒนา เพราะเรามี API และ SDK ในการรองรับการใช้งานทำให้สามารถพัฒนาโปรแกรมได้โดยง่าย นอกจากนี้ยังมีหน้าเว็บที่รองรับในส่วนของ Dashboard และ Widget ไว้ให้นักพัฒนาสามารถสร้างสรรค์ผลงานได้สะดวกสบายมากยิ่งขึ้น
 
 ไลบรารี Magellan สำหรับ ESP32 และ ESP8266 ใช้กับโปรแกรม Arduino IDE รองรับการเชื่อมต่อ MQTT รับ-ส่งค่าเซนเซอร์ สั่งงานอุปกรณ์ และตั้งค่าต่าง ๆ ให้กับอุปกรณ์ เป็นต้น
-
 -------
 
 ## สารบัญ
@@ -185,16 +184,34 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
      /* do something */
    }
 ```
-## 📚 Version 1.2.0 Magellan SDK ได้มีการเปลี่ยน FS library 
-> 💡 **TIP**  Improve performance
-  * Default จาก `SPIFFS` มาใช้งานเป็น `LittleFS` หาต้องการใช้งาน SPIFFS
-  ให้ `Declare Macro` ไว้เหนือการ Include Magellan SDK ดังนี้
-  ```cpp
-  #include <Arduino.h>
-  #define MG_USE_SPIFFS
-  #include <MAGELLAN_MQTT.h>
-  ```
-  หรือถ้าหากใช้ platformio ก็สามารถ set
+## NEW Feature support version 1.4.0 
+ให้ตั้งค่าที่ไฟล์:
+
+`Magellan/src/utils/MAGELLAN_LIB_CONF.h`
+# Library Magellan Config
+### 1. ตั้งค่า  ArduinoJson v7 (Dependency)
+
+
+
+แล้วเปลี่ยนค่า: จาก 0 (Default V6) เป็น 1 (V7) กรณีที่อยากใช้ ArduinoJSON Version7 (ต้องติดตั้งเอง)
+```C++
+#define MAGELLAN_USE_ARDUINOJSON7 1
+```
+<br><br>ติดตั้งไลบรารี `ArduinoJson` เวอร์ชัน 7 จาก Library Manager
+
+### 2. ตั้งค่า FileSystem จาก `LittleFS(Default)` มาใช้งานเป็น `SPIFFS` 
+
+###### 0 = LittleFS (default), 1 = SPIFFS
+``` C++
+#define MAGELLAN_USE_SPIFFS 0  //uncomment and define value
+```
+
+### 3. ตั้งค่า Debug Print log level
+###### 0 = none, 1 = error, 2 = info, 3 = debug
+``` C++
+#define MAGELLAN_LOG_LEVEL 3 //uncomment and define valueline
+```
+##
 
  > **⚠️ WARNING**    `magel.interval` ใน 1 loop function timer ใช้ได้แค่ 1 อันเท่านั้นหากใช้งานมากกว่า 1 function จะทำงานแค่บรรทัดที่เขียนไว้ล่างสุด.<br>
 >ℹ️ Information`Function "Interval" เป็น Function optional เท่านั้น สามารถใช้ function timer ทดแทนได้`
