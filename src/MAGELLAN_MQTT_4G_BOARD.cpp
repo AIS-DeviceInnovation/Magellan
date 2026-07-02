@@ -142,17 +142,38 @@ void MAGELLAN_MQTT_4G_BOARD::connectModem()
   }
   MG_LOG_I("modem connected!");
 }
+// void MAGELLAN_MQTT_4G_BOARD::checkModem()
+// {
+//   if (!_modem.isGprsConnected())
+//   {
+//     MG_LOG_I("Reconnecting PPP...");
+//     _modem.gprsConnect(_apn);
+//     delay(500); // รอ PPP stable
+//   }
+// }
+static unsigned long _prev_checkModem_millis = 0;
 void MAGELLAN_MQTT_4G_BOARD::checkModem()
 {
-  if (!_modem.isGprsConnected())
+  unsigned long now = millis();
+  // Rate-limit reconnect attempts: wait 500 ms between tries to let PPP stabilise
+  if (now - _prev_checkModem_millis >= 5000)
   {
-    MG_LOG_I("Reconnecting PPP...");
-    _modem.gprsConnect(_apn);
-    delay(500); // รอ PPP stable
+    _prev_checkModem_millis = now;
+    if (!_modem.isGprsConnected())
+    {
+      if (!_modem.isNetworkConnected())
+      {
+        MG_LOG_E("Cellular Network is registering in background... skip this round.");
+        return;
+      }
+      MG_LOG_I("Reconnecting PPP...");
+      _modem.gprsConnect(_apn);
+      return;
+    }
   }
 }
 
-void MAGELLAN_MQTT_4G_BOARD::HandleModem()
+void MAGELLAN_MQTT_4G_BOARD::handleModemMagellan()
 {
   if (_modem.isGprsConnected() && !this->MAGELLAN_MQTT::isConnected())
   {
@@ -161,7 +182,7 @@ void MAGELLAN_MQTT_4G_BOARD::HandleModem()
   }
 }
 
-void MAGELLAN_MQTT_4G_BOARD::InitGSM()
+void MAGELLAN_MQTT_4G_BOARD::initGSM()
 {
   MG_LOG_I("# ==== USE AIS 4G BOARD MODE INIT GSM ====");
   this->powerModem();
@@ -173,7 +194,7 @@ void MAGELLAN_MQTT_4G_BOARD::InitGSM()
 
 void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
 {
-  this->InitGSM();
+  this->initGSM();
 
 #ifdef BYPASS_REQTOKEN
   if (_setting.ThingToken != "null" && _setting.ThingToken.length() > 25)
@@ -263,13 +284,13 @@ void MAGELLAN_MQTT_4G_BOARD::reconnect()
 
 void MAGELLAN_MQTT_4G_BOARD::loop()
 {
-  this->HandleModem();
+  this->handleModemMagellan();
   this->MAGELLAN_MQTT::loop();
 }
 
 void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
 {
-  this->parent->InitGSM();
+  this->parent->initGSM();
 
   if (!_modem.isGprsConnected())
   {
@@ -328,13 +349,15 @@ void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
   this->parent->builtInSensor.begin();
 }
 
-int16_t MAGELLAN_MQTT_4G_BOARD::getSignalStrength(){
+int16_t MAGELLAN_MQTT_4G_BOARD::getSignalStrength()
+{
   int rssiNomalized = _modem.getSignalQuality();
   int rssiDbm = mapRSSITodBm(rssiNomalized);
   return rssiDbm;
 }
 
-String MAGELLAN_MQTT_4G_BOARD::getRSSIQuality(){
+String MAGELLAN_MQTT_4G_BOARD::getRSSIQuality()
+{
   int rssiNomalized = _modem.getSignalQuality();
   int16_t dBm = mapRSSITodBm(rssiNomalized);
   return getSignalStrengthCategory(dBm);
@@ -348,7 +371,7 @@ GPS_Data MAGELLAN_MQTT_4G_BOARD::GPS_utils::getCurrentGPSData()
   GPS_Data data;
   if (this->gps_internal.gpsIsOn(modem))
   {
-    this->gps_internal.gpsRead(modem, data); 
+    this->gps_internal.gpsRead(modem, data);
   }
   this->_gpsData = data;
   return data;
@@ -431,4 +454,72 @@ float MAGELLAN_MQTT_4G_BOARD::BuiltinSensor::readHumidity()
 {
   return SHT40.readHumidity();
 }
+
+LTE_Signal_INFO MAGELLAN_MQTT_4G_BOARD::SignalAnalysis::getDetailedSignal()
+{
+  LTE_Signal_INFO sig;
+
+  // 1. ส่งคำสั่ง AT ผ่านท่อของ TinyGSM
+  TinyGsm &modem = this->parent->getGSMModem();
+  modem.sendAT("+CPSI?");
+
+  String response = "";
+  // รอการตอบกลับจากโมเด็มภายใน 2000 มิลลิวินาที
+  if (modem.waitResponse(2000, response) == 1)
+  {
+    // นำข้อมูลมาตัดเอาเฉพาะบรรทัดที่มี +CPSI:
+    int index = response.indexOf("+CPSI:");
+    if (index >= 0)
+    {
+      String data = response.substring(index);
+      data.replace("\r", "");
+      data.replace("\n", "");
+
+      // ตัวอย่างข้อมูล: +CPSI: LTE,Online,520-03,0x33A1,135372551,385,EUTRAN-band3,1850,5,5,-12,-82,-53,18
+      // เราจะใช้การตัดคำด้วย Comma (,) เพื่อดึงตัวเลขท้ายประโยคมาใช้งาน
+      int count = 0;
+      int lastComma = 0;
+      int nextComma = 0;
+
+      String tokens[14]; // เก็บค่าแยกตามคอมมา
+
+      while ((nextComma = data.indexOf(',', lastComma)) != -1 && count < 14)
+      {
+        tokens[count++] = data.substring(lastComma, nextComma);
+        lastComma = nextComma + 1;
+      }
+      tokens[count] = data.substring(lastComma); // ตัวสุดท้าย (SINR)
+
+      // ตรวจสอบว่าเป็นโหมด LTE ไหม และพาร์สข้อมูลตามตำแหน่งเลเยอร์
+      if (tokens[0].indexOf("LTE") >= 0 && count >= 13)
+      {
+        sig.mode = "LTE";
+        sig.band = tokens[6];               // EUTRAN-band
+        sig.rsrq = tokens[10].toInt() / 10; // RSRQ
+        sig.rsrp = tokens[11].toInt() / 10; // RSRP
+        sig.rssi = tokens[12].toInt() / 10; // RSSI
+        sig.sinr = tokens[13].toInt() / 10; // SINR
+      }
+    }
+  }
+  return sig;
+}
+
+void MAGELLAN_MQTT_4G_BOARD::ConnectivityModem::begin()
+{
+  this->parent->initGSM();
+}
+void MAGELLAN_MQTT_4G_BOARD::ConnectivityModem::handle()
+{
+  this->parent->checkModem();
+}
+TinyGsmClient &MAGELLAN_MQTT_4G_BOARD::ConnectivityModem::getClient()
+{
+  return this->parent->getGSMClient();
+}
+TinyGsm &MAGELLAN_MQTT_4G_BOARD::ConnectivityModem::getModem()
+{
+  return this->parent->getGSMModem();
+}
+
 #endif // ESP32

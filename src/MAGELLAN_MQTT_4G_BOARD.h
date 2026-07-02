@@ -53,6 +53,16 @@ Modified: 22 dec 2025.
 #define PIN_MODEM_RX 14
 #define PIN_MODEM_PWR 12
 
+struct LTE_Signal_INFO
+{
+  String mode = "Unknown";
+  String band = "Unknown";
+  int rsrq = 999;
+  int rsrp = 999;
+  int rssi = 999;
+  int sinr = 999;
+};
+
 extern Magellan_Setting setting;
 class MAGELLAN_MQTT_4G_BOARD : public MAGELLAN_MQTT
 {
@@ -63,8 +73,8 @@ public:
   void connectModem();
 
   void checkModem();
-  void HandleModem(); // handle modem connection and reconnect mqtt when ppp connected
-  void InitGSM();     // initialize GSM modem is using function above running by correctly sequence.
+  void handleModemMagellan(); // handle modem connection and reconnect mqtt when ppp connected
+  void initGSM();     // initialize GSM modem is using function above running by correctly sequence.
   TinyGsmClient &getGSMClient();
   TinyGsm &getGSMModem();
 
@@ -84,6 +94,21 @@ public:
 
   private:
   } centric;
+
+  struct ConnectivityModem
+  {
+    MAGELLAN_MQTT_4G_BOARD *parent;
+    void begin();
+    void handle();
+    TinyGsmClient &getClient();
+    TinyGsm &getModem();
+  } GSMModem;
+
+  struct SignalAnalysis
+  {
+    MAGELLAN_MQTT_4G_BOARD *parent;
+    LTE_Signal_INFO getDetailedSignal();
+  } radioSignal;
 
   struct GPS_utils
   {
