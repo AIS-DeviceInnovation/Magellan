@@ -8,14 +8,16 @@ Released for private usage.
 #ifndef ATTRIBUTE_CORE_H
 #define ATTRIBUTE_CORE_H
 #include <Arduino.h>
+#include <functional>
 #include <Client.h>
 #include "./PubSubClient.h"
-#include "./ArduinoJson-v6.18.3.h"
+#include "./MAGELLAN_LIB_CONF.h"
 #include "./FileSystem.h"
 #include "./manageConfigOTAFile.h"
 #include "./manageCredentialFile.h"
 #include "./APISubscribeHandler.h"
 #include "./utility.h"
+#include "./MAGELLAN_LOG.h"
 
 #ifdef ESP32
 #ifdef MG_USE_SPIFFS
@@ -32,8 +34,8 @@ Released for private usage.
 // #endif
 
 #define _major_ver 1
-#define _feature_ver 3
-#define _enhance_ver 1
+#define _feature_ver 4
+#define _enhance_ver 0
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -85,9 +87,15 @@ public:
   static size_t calculate_chunkSize;
   static boolean inProcessOTA;
   static boolean startReqDownloadOTA;
+#if !MAGELLAN_USE_ARDUINOJSON7
   static StaticJsonDocument<512> docClientConf;
   static DynamicJsonDocument *adjDoc;
   static DynamicJsonDocument *docSensor;
+#else
+  static JsonDocument docClientConf;
+  static JsonDocument *adjDoc;
+  static JsonDocument *docSensor;
+#endif
   static boolean checkUpdate_inside;
   static unsigned int delayCheckUpdate_inside;
   static unsigned int delayRequest_download;
@@ -102,6 +110,9 @@ public:
   static SubscribesCheckLists sub_check_list;
   static unsigned long refPercentOTA;
   static bool flagPrintProgressOTA;
+  // Called just before ESP.restart() in OTA flow.
+  // 4G engines can set this callback to power off modem safely.
+  static std::function<void()> cb_before_restart;
 };
 extern Attribute_MQTT_core attr;
 #endif

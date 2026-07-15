@@ -49,6 +49,26 @@ void connectWiFi(MAGELLAN_WIFI_SETTING &sWIFI_SETTING)
       break;
     }
   }
+  // ESP32: DHCP assigns the DNS server shortly after IP — wait until it's ready
+  // before attempting any hostname resolution (e.g. MQTT broker hostname)
+  {
+    unsigned long _dns_t = millis();
+    while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
+      delay(200);
+    }
+    // Serial.print(F("\n# DNS Server: "));
+    // Serial.println(WiFi.dnsIP());
+  }
+  // ESP32: verify the assigned DNS can resolve external hostnames.
+  // If not, fall back to Google DNS (8.8.8.8) so the MQTT broker hostname resolves.
+  {
+    IPAddress _dns_probe;
+    if (WiFi.hostByName("google.com", _dns_probe) != 1) {
+      Serial.println(F("# DNS check failed — switching to fallback DNS (8.8.8.8)"));
+      WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(), IPAddress(8, 8, 8, 8));
+      delay(500);
+    }
+  }
 #elif defined ESP8266
   WiFi.begin(sWIFI_SETTING.SSID.c_str(), sWIFI_SETTING.PASS.c_str());
   Serial.print(F("# Connecting to WIFI network"));
@@ -57,6 +77,16 @@ void connectWiFi(MAGELLAN_WIFI_SETTING &sWIFI_SETTING)
   {
     delay(250);
     Serial.print(".");
+  }
+  // ESP8266: DHCP assigns the DNS server shortly after IP — wait until it's ready
+  // before attempting any hostname resolution (e.g. MQTT broker hostname)
+  {
+    unsigned long _dns_t = millis();
+    while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
+      delay(200);
+    }
+    // Serial.print(F("\n# DNS Server: "));
+    // Serial.println(WiFi.dnsIP());
   }
 #endif
   Serial.println(F("\n# Wifi Connected!"));
@@ -95,6 +125,26 @@ void connectWiFi(String SSID, String PASS)
       break;
     }
   }
+  // ESP32: DHCP assigns the DNS server shortly after IP — wait until it's ready
+  // before attempting any hostname resolution (e.g. MQTT broker hostname)
+  {
+    unsigned long _dns_t = millis();
+    while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
+      delay(200);
+    }
+    // Serial.print(F("\n# DNS Server: "));
+    // Serial.println(WiFi.dnsIP());
+  }
+  // ESP32: verify the assigned DNS can resolve external hostnames.
+  // If not, fall back to Google DNS (8.8.8.8) so the MQTT broker hostname resolves.
+  {
+    IPAddress _dns_probe;
+    if (WiFi.hostByName("google.com", _dns_probe) != 1) {
+      Serial.println(F("# DNS check failed — switching to fallback DNS (8.8.8.8)"));
+      WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(), IPAddress(8, 8, 8, 8));
+      delay(500);
+    }
+  }
 #elif defined ESP8266
   WiFiSetting.SSID = SSID;
   WiFiSetting.PASS = PASS;
@@ -105,6 +155,15 @@ void connectWiFi(String SSID, String PASS)
   {
     delay(250);
     Serial.print(".");
+  }
+  // ESP8266: DHCP assigns the DNS server shortly after IP — wait until it's ready
+  {
+    unsigned long _dns_t = millis();
+    while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 5000) {
+      delay(200);
+    }
+    // Serial.print(F("\n# DNS Server: "));
+    // Serial.println(WiFi.dnsIP());
   }
 #endif
   Serial.println(F("\n# Wifi Connected!"));
@@ -138,6 +197,26 @@ void reconnectWiFi(MAGELLAN_MQTT &mqttClient)
 
   if ((!wifiDisconnect) && (!mqttClient.isConnected()))
   {
+#ifdef ESP32
+    // ESP32: verify DNS after reconnect; fall back to Google DNS if needed
+    {
+      IPAddress _dns_probe;
+      if (WiFi.hostByName("google.com", _dns_probe) != 1) {
+        Serial.println(F("# DNS check failed after reconnect — switching to fallback DNS (8.8.8.8)"));
+        WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(), IPAddress(8, 8, 8, 8));
+        delay(500);
+      }
+    }
+#endif
+#ifdef ESP8266
+    // ESP8266: DNS server may not be ready immediately after WiFi reconnect
+    {
+      unsigned long _dns_t = millis();
+      while (WiFi.dnsIP() == IPAddress(0, 0, 0, 0) && millis() - _dns_t < 3000) {
+        delay(200);
+      }
+    }
+#endif
     mqttClient.reconnect();
   }
 }

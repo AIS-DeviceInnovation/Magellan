@@ -2,6 +2,7 @@
 #include <MAGELLAN_MQTT_4G_BOARD.h>
 
 MAGELLAN_MQTT_4G_BOARD Board;
+MAGELLAN_MQTT_4G_BOARD::ConnectivityModem &gsmBoard = Board.GSMModem;
 PubSubClient mqttClient;
 
 const char *MQTT_Server = "broker.hivemq.com";
@@ -51,8 +52,8 @@ void reconnect()
 void setup()
 {
   Serial.begin(115200);
-  Board.InitGSM();
-  TinyGsmClient &gsmClient = Board.getGSMClient();
+  gsmBoard.begin();
+  TinyGsmClient &gsmClient = gsmBoard.getClient();
   mqttClient.setClient(gsmClient);
   mqttClient.setServer(MQTT_Server, MQTT_port);
   mqttClient.setBufferSize(512); //up to 8192 bytes หาใช้งานกับ payload ขนาดใหญ่ แนะนำให้ใช้ 4096 ขึ้นไป - 8192
@@ -64,7 +65,7 @@ void loop()
 {
   if (!mqttClient.connected())
   {
-    Board.checkModem();
+    gsmBoard.handle();
     reconnect();
   }
   mqttClient.loop();
@@ -75,8 +76,8 @@ void loop()
     Serial.println("Publishing message...");
     String message = "hello world count: " + String(counter);
     mqttClient.publish("outTopic", message.c_str());
-    counter++;
     Serial.print("Published count: ");
     Serial.println(counter);
+    counter++;
   }
 }

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <MAGELLAN_MEDIA_FILE.h>
 #if defined(ESP8266)
-//esp8266 not supported
+// esp8266 not supported
 #elif defined(ESP32)
 const char *enumToString(mediaTypeEnum mediatype)
 {
@@ -40,11 +40,10 @@ size_t readBuffersize()
 String buildSensorJSON(JsonDocument &ref_docs)
 {
     String bufferJsonStr;
-    // Serial.println("# [Build JSON Key is]: "+ String(ref_docs.size()) +" key");
+#if !MAGELLAN_USE_ARDUINOJSON7
     size_t mmr_usage = ref_docs.memoryUsage();
     size_t max_size = ref_docs.memoryPool().capacity();
     size_t safety_size = max_size * (0.97);
-    // Serial.println("Safety size: "+String(safety_size));
     if (mmr_usage >= safety_size)
     {
         bufferJsonStr = "null";
@@ -55,8 +54,22 @@ String buildSensorJSON(JsonDocument &ref_docs)
         serializeJson(ref_docs, bufferJsonStr);
         Serial.println("# [to JSON String Key is]: " + String(ref_docs.size()) + " key");
     }
-
     Serial.println("# MemoryUsage: " + String(mmr_usage) + "/" + String(safety_size) + " from(" + String(ref_docs.memoryPool().capacity()) + ")");
+#else
+    // const size_t max_size = 8192;
+    // size_t mmr_usage = measureJson(ref_docs);
+    // if (mmr_usage >= max_size)
+    // {
+    //     bufferJsonStr = "null";
+    //     Serial.println("# [Overload memory toJSONString] *Maximum size: " + String(max_size));
+    // }
+    // else
+    // {
+    serializeJson(ref_docs, bufferJsonStr);
+    Serial.println("# [to JSON[V7] String Key is]: " + String(ref_docs.size()) + " key");
+    // }
+    // Serial.println("# JSON size: " + String(mmr_usage));
+#endif
     return bufferJsonStr;
 }
 
@@ -75,7 +88,19 @@ void adjustBufferFormedia(size_t len_payload)
             // if ((len_payload > attr.mqtt_client->getBufferSize() + 10) && (attr.mqtt_client->getBufferSize() <= 55000))
             if ((len_payload > attr.mqtt_client->getBufferSize() + 10) && (attr.mqtt_client->getBufferSize() <= 55000))
             {
+#if !MAGELLAN_USE_ARDUINOJSON7
+                delete attr.docSensor;
                 attr.docSensor = new DynamicJsonDocument(len_payload);
+#else
+                if (attr.docSensor == NULL)
+                {
+                    attr.docSensor = new JsonDocument();
+                }
+                else
+                {
+                    attr.docSensor->clear();
+                }
+#endif
                 attr.mqtt_client->setBufferSize(len_payload + 3000); // offset mqtt client buffer
             }
         }
@@ -88,12 +113,16 @@ void adjustBufferFormedia(size_t len_payload)
 
 void addSensor(String key, String value, JsonDocument &ref_docs)
 {
+#if !MAGELLAN_USE_ARDUINOJSON7
     int len = value.length();
     char *c_value = new char[len + 1];
     std::copy(value.begin(), value.end(), c_value);
     c_value[len] = '\0';
     ref_docs[key] = c_value;
     delete[] c_value;
+#else
+    ref_docs[key] = value;
+#endif
 }
 
 bool reportJSON(String payload)
@@ -182,11 +211,11 @@ String MAGELLAN_MEDIA_FILE::BIHandle(uint8_t *binaryData, size_t sizeBinaryData)
  * @param mediatype application, audio, font, example, image, message, model, multipart, text, video.
  * @param subtype filename extension or file suffix (ex: png,jpeg,mped,mp4).
  */
-bool MAGELLAN_MEDIA_FILE::uploadFromBinary(const String& key, const uint8_t* binaryData, size_t sizeBinaryData, mediaTypeEnum mediatype, const String& subtype)
+bool MAGELLAN_MEDIA_FILE::uploadFromBinary(const String &key, const uint8_t *binaryData, size_t sizeBinaryData, mediaTypeEnum mediatype, const String &subtype)
 {
-    ESP.getFreePsram()>0?maximumRawData = maximumRawDataPS:maximumRawData;
+    ESP.getFreePsram() > 0 ? maximumRawData = maximumRawDataPS : maximumRawData;
 
-    const char* mediatypeStr = enumToString(mediatype);
+    const char *mediatypeStr = enumToString(mediatype);
     bool result = false;
     if (sizeBinaryData <= (size_t)maximumRawData)
     {
@@ -195,15 +224,15 @@ bool MAGELLAN_MEDIA_FILE::uploadFromBinary(const String& key, const uint8_t* bin
 
         if (attr.mqtt_client != NULL && attr.ext_Token.length() > 30)
         {
-            std::unique_ptr<uint8_t[]> buffer(new uint8_t[sizeBinaryData+5]);
+            std::unique_ptr<uint8_t[]> buffer(new uint8_t[sizeBinaryData + 5]);
             std::copy(binaryData, binaryData + sizeBinaryData, buffer.get());
             String topic = "api/v2/thing/" + attr.ext_Token + "/report/persist/pta/?sensor=" + key;
 
             String buf64 = base64::encode(buffer.get(), sizeBinaryData);
-            String b64Mime = "data:"+(String)mediatypeStr+"/"+subtype+";base64," + buf64;
+            String b64Mime = "data:" + (String)mediatypeStr + "/" + subtype + ";base64," + buf64;
             size_t cal_buff_adj = topic.length() + b64Mime.length() + 10;
 
-            if(b64Mime.length() < 25 || b64Mime == NULL || b64Mime == "")
+            if (b64Mime.length() < 25 || b64Mime == NULL || b64Mime == "")
             {
                 Serial.println(F("### Failed to convert to Base64 with Mime type.\n### Insufficient Heap"));
                 Serial.println(F("-------------------------------"));
@@ -239,10 +268,10 @@ bool MAGELLAN_MEDIA_FILE::uploadFromBinary(const String& key, const uint8_t* bin
  * @param mediatype application, audio, font, example, image, message, model, multipart, text, video.
  * @param subtype filename extension or file suffix (ex: png,jpeg,mped,mp4).
  */
-bool MAGELLAN_MEDIA_FILE::uploadFromSPIFFS(const String& key, const char *filePath, mediaTypeEnum mediatype, const String& subtype)
+bool MAGELLAN_MEDIA_FILE::uploadFromSPIFFS(const String &key, const char *filePath, mediaTypeEnum mediatype, const String &subtype)
 {
-    ESP.getFreePsram()>0?maximumRawData = maximumRawDataPS:maximumRawData;
-    Serial.printf("\n\t\tMaximum Size:%d Psram: %d\n",maximumRawData,ESP.getFreePsram());
+    ESP.getFreePsram() > 0 ? maximumRawData = maximumRawDataPS : maximumRawData;
+    Serial.printf("\n\t\tMaximum Size:%d Psram: %d\n", maximumRawData, ESP.getFreePsram());
     String mediatypeStr = enumToString(mediatype);
     bool result = false;
     fileSys.begin();
@@ -273,11 +302,11 @@ bool MAGELLAN_MEDIA_FILE::uploadFromSPIFFS(const String& key, const char *filePa
             file.read(buffer, size);
             String buf64 = base64::encode(buffer, size);
             delete[] buffer;
-            
+
             file.close();
             String prefixB64 = "data:" + mediatypeStr + "/" + subtype + ";base64,";
             String topic = "api/v2/thing/" + attr.ext_Token + "/report/persist/pta/?sensor=" + key;
-            size_t b64MimeSize = prefixB64.length()+ buf64.length();
+            size_t b64MimeSize = prefixB64.length() + buf64.length();
             size_t cal_buff_adj = topic.length() + b64MimeSize + 10;
 
             if ((b64MimeSize > attr.mqtt_client->getBufferSize() + 10) && (attr.mqtt_client->getBufferSize() <= 56000))
@@ -293,7 +322,7 @@ bool MAGELLAN_MEDIA_FILE::uploadFromSPIFFS(const String& key, const char *filePa
                 size_t len = std::min(chunkSize, buf64.length() - i);
                 b64Mime += buf64.substring(i, i + len);
             }
-            if(b64MimeSize < 25 || b64Mime.length() < 25 || b64Mime == NULL || b64Mime == "")
+            if (b64MimeSize < 25 || b64Mime.length() < 25 || b64Mime == NULL || b64Mime == "")
             {
                 Serial.println(F("### Failed to convert to Base64 with Mime type.\n### Insufficient Heap"));
                 Serial.println(F("-------------------------------"));
@@ -328,7 +357,7 @@ bool MAGELLAN_MEDIA_FILE::uploadFromSPIFFS(const String& key, const char *filePa
  * @param subtype filename extension or file suffix (ex: png,jpeg,mped,mp4).
  * @param SD the SD card module that you begin in the setup().
  */
-bool MAGELLAN_MEDIA_FILE::uploadFromSDCard(const String& key, const char *filePath, mediaTypeEnum mediatype, const String& subtype,fs::FS &SD)
+bool MAGELLAN_MEDIA_FILE::uploadFromSDCard(const String &key, const char *filePath, mediaTypeEnum mediatype, const String &subtype, fs::FS &SD)
 {
     String mediatypeStr = enumToString(mediatype);
     bool result = false;
@@ -366,7 +395,7 @@ bool MAGELLAN_MEDIA_FILE::uploadFromSDCard(const String& key, const char *filePa
             file.close();
             String prefixB64 = "data:" + mediatypeStr + "/" + subtype + ";base64,";
             String topic = "api/v2/thing/" + attr.ext_Token + "/report/persist/pta/?sensor=" + key;
-            size_t b64MimeSize = prefixB64.length()+ buf64.length();
+            size_t b64MimeSize = prefixB64.length() + buf64.length();
             size_t cal_buff_adj = topic.length() + b64MimeSize + 10;
 
             if ((b64MimeSize > attr.mqtt_client->getBufferSize() + 10) && (attr.mqtt_client->getBufferSize() <= 56000))
@@ -384,7 +413,7 @@ bool MAGELLAN_MEDIA_FILE::uploadFromSDCard(const String& key, const char *filePa
                 size_t len = std::min(chunkSize, buf64.length() - i);
                 b64Mime += buf64.substring(i, i + len);
             }
-            if(b64MimeSize < 25 || b64Mime.length() < 25 || b64Mime == NULL || b64Mime == "")
+            if (b64MimeSize < 25 || b64Mime.length() < 25 || b64Mime == NULL || b64Mime == "")
             {
                 Serial.println(F("### Failed to convert to Base64 with Mime type.\n### Insufficient Heap"));
                 Serial.println(F("-------------------------------"));
@@ -447,11 +476,11 @@ String MAGELLAN_MEDIA_FILE::toBase64String(uint8_t *binaryData, size_t sizeBinar
  * @param subtype filename extension or file suffix (ex: png,jpeg,mped,mp4).
  * @return return String in Base64 format.
  */
-String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(const char *filePath, mediaTypeEnum mediatype, const String& subtype)
+String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(const char *filePath, mediaTypeEnum mediatype, const String &subtype)
 {
     String mediatypeStr = enumToString(mediatype);
     String rawB64 = FSHandle(filePath);
-    String b64Mime = "data:"+mediatypeStr+"/"+subtype+";base64," + rawB64;
+    String b64Mime = "data:" + mediatypeStr + "/" + subtype + ";base64," + rawB64;
     return b64Mime;
 }
 
@@ -463,11 +492,11 @@ String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(const char *filePath, mediaTy
  * @param subtype filename extension or file suffix (ex: png,jpeg,mped,mp4).
  * @return return String in Base64 format.
  */
-String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(const char *filePath, mediaTypeEnum mediatype, const String& subtype, fs::FS &SD)
+String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(const char *filePath, mediaTypeEnum mediatype, const String &subtype, fs::FS &SD)
 {
     String mediatypeStr = enumToString(mediatype);
     String rawB64 = SDHandle(filePath, SD);
-    String b64Mime = "data:"+mediatypeStr+"/"+subtype+";base64," + rawB64;
+    String b64Mime = "data:" + mediatypeStr + "/" + subtype + ";base64," + rawB64;
     return b64Mime;
 }
 
@@ -479,11 +508,11 @@ String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(const char *filePath, mediaTy
  * @param subtype filename extension or file suffix (ex: png,jpeg,mped,mp4).
  * @return return String in Base64 format.
  */
-String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(uint8_t *binaryData, size_t sizeBinaryData, mediaTypeEnum mediatype, const String& subtype)
+String MAGELLAN_MEDIA_FILE::toBase64MimeTypeString(uint8_t *binaryData, size_t sizeBinaryData, mediaTypeEnum mediatype, const String &subtype)
 {
     String mediatypeStr = enumToString(mediatype);
     String rawB64 = BIHandle(binaryData, sizeBinaryData);
-    String b64Mime = "data:"+mediatypeStr+"/"+subtype+";base64," + rawB64;
+    String b64Mime = "data:" + mediatypeStr + "/" + subtype + ";base64," + rawB64;
     return b64Mime;
 }
 #endif

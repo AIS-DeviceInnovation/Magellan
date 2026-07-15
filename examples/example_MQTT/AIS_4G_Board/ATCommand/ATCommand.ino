@@ -1,9 +1,8 @@
-
-
 #include <Arduino.h>
 
 #include <MAGELLAN_MQTT_4G_BOARD.h>
-MAGELLAN_MQTT_4G_BOARD magel;
+MAGELLAN_MQTT_4G_BOARD board;
+MAGELLAN_MQTT_4G_BOARD::ConnectivityModem &gsmBoard = board.GSMModem;
 
 #define LED_BUILTIN 15
 
@@ -14,10 +13,9 @@ void setup()
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW); // set status ON OFF Relay Channel 1
-  magel.InitGSM();
-  magel.connectModem();
+  gsmBoard.begin();
   Serial.println("Start Test \"ATI\" Command");
-  TinyGsm modem = magel.getGSMModem();
+  TinyGsm modem = gsmBoard.getModem();
   String res = atcmd("I", modem);
   Serial.print(F("Received: "));
   Serial.println(res);
@@ -30,14 +28,14 @@ void setup()
 
 void loop()
 {
-  magel.checkModem();         // check modem status and reconnect if needed
+  gsmBoard.handle();         // check modem status and reconnect if needed
   if (Serial.available() > 0) // handle user input from Serial Monitor
   {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     String input = Serial.readStringUntil('\n');
     input.trim();
     Serial.println(F("============================================"));
-    TinyGsm modem = magel.getGSMModem();
+    TinyGsm modem = gsmBoard.getModem();
     String res = atcmd(input, modem);
     Serial.print(F("Received: "));
     Serial.println(res);

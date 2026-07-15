@@ -1,6 +1,7 @@
 #ifndef __RS485_H__
 #define __RS485_H__
 
+#ifdef ESP32
 #include "Arduino.h"
 
 #define RS485_RX  16
@@ -56,5 +57,6 @@ class RS485Class : public Stream {
 };
 
 extern RS485Class RS485;
+#endif // ESP32
 
-#endif
+#endif // __RS485_H__

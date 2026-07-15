@@ -82,15 +82,14 @@ void MAGELLAN_MQTT::begin(Magellan_Setting _setting)
   }
   else
   {
-    Serial.println(F("# Invalid setting ThingToken"));
-    Serial.println(F("# Define \"BYPASS_REQTOKEN\" but not setting ThingToken manual back into auto renew ThingToken mode"));
+    MG_LOG_E("# Invalid setting ThingToken");
+    MG_LOG_I("# Define \"BYPASS_REQTOKEN\" but not setting ThingToken manual back into auto renew ThingToken mode");
   }
 #endif
 
   if (_setting.clientBufferSize > _default_OverBufferSize)
   {
-    Serial.print(F("# You have set a buffer size greater than 8192, adjusts to: "));
-    Serial.println(_default_OverBufferSize);
+    MG_LOG_I_S("# You have set a buffer size greater than 8192, adjusts to: " + String(_default_OverBufferSize));
     this->setMQTTBufferSize(_default_OverBufferSize);
     attr.calculate_chunkSize = _default_OverBufferSize / 2;
   }
@@ -112,17 +111,14 @@ void MAGELLAN_MQTT::begin(Magellan_Setting _setting)
   {
     _setting.ThingIdentifier = this->credential.getThingIdentifier();
     _setting.ThingSecret = this->credential.getThingSecret();
-    Serial.println(F("# Get credential in filesystem"));
+    MG_LOG_I("# Get credential in filesystem");
   }
   // second validate after get information
   if (coreMQTT->CheckString_isDigit(_setting.ThingIdentifier) && coreMQTT->CheckString_isDigit(_setting.ThingSecret))
   {
-    Serial.print(F("ThingIdentifier: "));
-    Serial.println(_setting.ThingIdentifier);
-    Serial.print(F("ThingSecret: "));
-    Serial.println(_setting.ThingSecret);
-    Serial.print(F("IMEI: "));
-    Serial.println(_setting.IMEI);
+    MG_LOG_D_S("ThingIdentifier: " + _setting.ThingIdentifier);
+    MG_LOG_D_S("ThingSecret: " + _setting.ThingSecret);
+    MG_LOG_I_S("IMEI: " + _setting.IMEI);
     if (_setting.port > 0)
     {
 
@@ -136,11 +132,10 @@ void MAGELLAN_MQTT::begin(Magellan_Setting _setting)
   }
   else
   {
-    Serial.println(F("# ThingIdentifier(ICCID) or ThingSecret(IMSI) invalid value please check again"));
-    Serial.println("# ThingIdentifier =>" + _setting.ThingIdentifier);
-    Serial.println("# ThingSecret =>" + _setting.ThingSecret);
-    Serial.println(F("# ==========================="));
-    Serial.println(F("# Restart board"));
+    MG_LOG_E("# ThingIdentifier(ICCID) or ThingSecret(IMSI) invalid value please check again");
+    MG_LOG_D_S("# ThingIdentifier =>" + _setting.ThingIdentifier);
+    MG_LOG_D_S("# ThingSecret =>" + _setting.ThingSecret);
+    MG_LOG_E("# Restart board");
     delay(5000);
     ESP.restart();
   }
@@ -158,7 +153,7 @@ void MAGELLAN_MQTT::beginCustom(String _thingIden, String _thingSecret, String _
 
   if (t_iden == "null" || t_sec == "null")
   {
-    Serial.println(F("# Get credential in filesystem"));
+    MG_LOG_I("# Get credential in filesystem");
     t_iden = this->credential.getThingIdentifier();
     t_sec = this->credential.getThingSecret();
   }
@@ -203,7 +198,6 @@ String MAGELLAN_MQTT::deserializeControl(String payload)
 
 bool MAGELLAN_MQTT::Report::send(String payload)
 {
-  ResultReport result;
   int len = payload.length();
   adjust_BufferForMedia(len + 2000);
   return coreMQTT->report(payload);
@@ -329,9 +323,9 @@ ResultReport MAGELLAN_MQTT::Report::sendWithMsgId(String payload, int msgId)
   internalResult.statusReport = result;
   internalResult.msgId = msgId;
   String _debug = (result == true) ? "Success" : "Failure";
-  Serial.println(F("-------------------------------"));
-  Serial.println("# Report JSON with MsgId: " + String(msgId) + " is " + _debug);
-  Serial.println("# [Sensors]: " + payload);
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Report JSON with MsgId: " + String(msgId) + " is " + _debug);
+  MG_LOG_D_S("# [Sensors]: " + payload);
   return internalResult;
 }
 
@@ -346,9 +340,9 @@ ResultReport MAGELLAN_MQTT::Report::sendWithMsgId(String reportKey, String repor
   internalResult.statusReport = result;
   internalResult.msgId = msgId;
   String _debug = (result == true) ? "Success" : "Failure";
-  Serial.println(F("-------------------------------"));
-  Serial.println("# Report Plaintext with MsgId: " + String(msgId) + " is " + _debug);
-  Serial.println("# [Sensors]: " + reportValue);
+  MG_LOG_I("-------------------------------");
+  MG_LOG_I_S("# Report Plaintext with MsgId: " + String(msgId) + " is " + _debug);
+  MG_LOG_D_S("# [Sensors]: " + reportValue);
   return internalResult;
 }
 
@@ -383,17 +377,13 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String payload, RetransmitSet
     {
       if (countRetransmit > 0)
       {
-        Serial.print(F("\n#Retransmit count: "));
-        Serial.print(countRetransmit);
-        Serial.print(F(" on MsgId: "));
-        Serial.println(retrans.msgId);
+        MG_LOG_D_S("#Retransmit count: " + String(countRetransmit) + " on MsgId: " + String(retrans.msgId));
       }
       result = this->sendWithMsgId(payload, retrans.msgId);
       countRetransmit++;
       if (countRetransmit > retrans.repeat)
       {
-        Serial.print(F("\n# Report retransmit fail timeout on MsgId: "));
-        Serial.println(attr.matchMsgId_send);
+        MG_LOG_E_S("# Report retransmit fail timeout on MsgId: " + String(attr.matchMsgId_send));
 
         attr.reqRetransmit = false;
         break;
@@ -402,8 +392,7 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String payload, RetransmitSet
     }
     if (attr.isMatchMsgId)
     {
-      Serial.print(F("# Finished report transmission MsgId: "));
-      Serial.println(attr.matchMsgId_send);
+      MG_LOG_I_S("# Finished report transmission MsgId: " + String(attr.matchMsgId_send));
       // Serial.println(countRetransmit);
       result.msgId = attr.matchMsgId_send; // assign msgId
       result.statusReport = true;
@@ -418,14 +407,13 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String payload, RetransmitSet
     {
       if (func_on_disc != NULL)
       {
-        Serial.println(F("# connection lost from server"));
-        Serial.println(F("# Report retransmit trigger event on disconnect"));
+        MG_LOG_E("# connection lost from server");
+        MG_LOG_I("# Report retransmit trigger event on disconnect");
         func_on_disc();
       }
       else
       {
-        Serial.print(F("\n# Report retransmit fail connection lost on MsgId: "));
-        Serial.println(attr.matchMsgId_send);
+        MG_LOG_E_S("# Report retransmit fail connection lost on MsgId: " + String(attr.matchMsgId_send));
         break;
       }
     }
@@ -435,12 +423,12 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String payload, RetransmitSet
       result.statusReport = false;
       attr.reqRetransmit = false;
       prev_millis_timeout = millis();
-      Serial.print(F("\n# Triger timeout from send retransmit"));
+      MG_LOG_E("# Triger timeout from send retransmit");
       break;
     }
     if (attr.inProcessOTA && attr.reqRetransmit)
     {
-      Serial.print(F("\n# In procress OTA cancel report with report retransmit"));
+      MG_LOG_I("# In procress OTA cancel report with report retransmit");
       result.msgId = attr.matchMsgId_send; // assign msgId
       result.statusReport = false;
       attr.reqRetransmit = false;
@@ -467,10 +455,7 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String reportKey, String repo
       result = this->sendWithMsgId(reportKey, reportValue, retrans.msgId);
       if (countRetransmit > 0)
       {
-        Serial.print(F("\n# Retransmit count: "));
-        Serial.print(countRetransmit);
-        Serial.print(F(" on MsgId: "));
-        Serial.println(retrans.msgId);
+        MG_LOG_D_S("# Retransmit count: " + String(countRetransmit) + " on MsgId: " + String(retrans.msgId));
       }
 
       // result.msgId = retrans.msgId;
@@ -478,8 +463,7 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String reportKey, String repo
       countRetransmit++;
       if (countRetransmit > retrans.repeat)
       {
-        Serial.print(F("\n# Report retransmit fail timeout on MsgId: "));
-        Serial.println(attr.matchMsgId_send);
+        MG_LOG_E_S("# Report retransmit fail timeout on MsgId: " + String(attr.matchMsgId_send));
         attr.reqRetransmit = false;
         break;
       }
@@ -487,8 +471,7 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String reportKey, String repo
     }
     if (attr.isMatchMsgId)
     {
-      Serial.print(F("# Finished report transmission MsgId: "));
-      Serial.println(attr.matchMsgId_send);
+      MG_LOG_I_S("# Finished report transmission MsgId: " + String(attr.matchMsgId_send));
       result.msgId = attr.matchMsgId_send; // assign msgId
       result.statusReport = true;
 
@@ -502,21 +485,20 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String reportKey, String repo
     {
       if (func_on_disc != NULL)
       {
-        Serial.println(F("# connection lost from server"));
-        Serial.println(F("# Report retransmit trigger event on disconnect"));
+        MG_LOG_E("# connection lost from server");
+        MG_LOG_I("# Report retransmit trigger event on disconnect");
         func_on_disc();
       }
       else
       {
-        Serial.print(F("\n# Report retransmit fail connection lost on MsgId: "));
-        Serial.println(attr.matchMsgId_send);
+        MG_LOG_E_S("# Report retransmit fail connection lost on MsgId: " + String(attr.matchMsgId_send));
         break;
       }
     }
     if (millis() - prev_millis_timeout > Timeout)
     {
       prev_millis_timeout = millis();
-      Serial.print(F("\n# Triger timeout from send retransmit"));
+      MG_LOG_E("# Triger timeout from send retransmit");
       result.msgId = attr.matchMsgId_send; // assign msgId
       result.statusReport = false;
       attr.reqRetransmit = false;
@@ -524,7 +506,7 @@ ResultReport MAGELLAN_MQTT::Report::sendRetransmit(String reportKey, String repo
     }
     if (attr.inProcessOTA && attr.reqRetransmit)
     {
-      Serial.print(F("\n# In procress OTA cancel report with report retransmit"));
+      MG_LOG_I("# In procress OTA cancel report with report retransmit");
       result.msgId = attr.matchMsgId_send; // assign msgId
       result.statusReport = false;
       attr.reqRetransmit = false;
@@ -648,12 +630,12 @@ String MAGELLAN_MQTT::Information::getThingToken()
 
 void MAGELLAN_MQTT::Information::getBoardInfo()
 {
-  Serial.println(F("#====== Board information ========="));
-  Serial.println("ThingIdentifier: " + String(coreMQTT->readThingIdentifier()));
-  Serial.println("ThingSecret: " + String(coreMQTT->readThingSecret()));
+  MG_LOG_I("#====== Board information =========");
+MG_LOG_I_S("ThingIdentifier: " + String(coreMQTT->readThingIdentifier()));
+MG_LOG_I_S("ThingSecret: " + String(coreMQTT->readThingSecret()));
   if (setting.IMEI != "null" && setting.IMEI.length() > 8)
-    Serial.println("IMEI: " + String(setting.IMEI));
-  Serial.println(F("#================================="));
+MG_LOG_I_S("IMEI: " + String(setting.IMEI));
+  MG_LOG_I("#=================================");
 }
 
 String MAGELLAN_MQTT::Information::getThingIdentifier()
@@ -719,26 +701,26 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, String sensorValue)
   JsonDocUtils validateJSON_doc = readSafetyCapacity_Json_doc(*attr.docSensor);
   if (sensorValue == "null")
   {
-    Serial.println("# add [Key] \"" + sensorKey + "\" failed, this function does not allow set value \"null\"");
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" failed, this function does not allow set value \"null\"");
     return;
   }
   else if (validateJSON_doc.used > validateJSON_doc.safety_size * 0.8f)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
-    Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else if (sensorValue.length() > 10000 && coreMQTT->readBufferSensor(*attr.docSensor) < sensorValue.length())
   {
-    Serial.println(F("# Preparing large data to JSONbuffer"));
+    MG_LOG_I("# Preparing large data to JSONbuffer");
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(sensorValue.length() + bufJSON.length() + 3000); // offset size
+    coreMQTT->adjustBufferSensor(sensorValue.length() + bufJSON.length() + 3000);
     deserializeJson(*attr.docSensor, bufJSON);
-    Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -752,27 +734,27 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, const char *sensorValue)
   JsonDocUtils validateJSON_doc = readSafetyCapacity_Json_doc(*attr.docSensor);
   if (sensorValue == "null")
   {
-    Serial.println("# add [Key] \"" + sensorKey + "\" failed, this function does not allow set value \"null\"");
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" failed, this function does not allow set value \"null\"");
     return;
   }
   else if (validateJSON_doc.used > validateJSON_doc.safety_size * 0.8f)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
 
-    Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     deserializeJson(*attr.docSensor, bufJSON);
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else if (strlen(sensorValue) > 10000 && strlen(sensorValue) > coreMQTT->readBufferSensor(*attr.docSensor))
   {
-    Serial.println(F("# Preparing large data to JSONbuffer"));
+    MG_LOG_I("# Preparing large data to JSONbuffer");
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(strlen(sensorValue) + bufJSON.length() + 3000); // offset size
+    coreMQTT->adjustBufferSensor(strlen(sensorValue) + bufJSON.length() + 3000);
     deserializeJson(*attr.docSensor, bufJSON);
-    Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -788,9 +770,9 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, int sensorValue)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
-    Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -806,9 +788,9 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, float sensorValue)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
-    Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -824,9 +806,9 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, boolean sensorValue)
   {
     String bufJSON = this->toJSONString();
     // attr.docSensor->clear();
-    attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
+    coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
-    Serial.println("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -855,15 +837,15 @@ void MAGELLAN_MQTT::Sensor::report()
     }
     else if (bufferPlayload.indexOf("null") == -1 && len > attr.max_payload_report)
     {
-      Serial.println("# [ERROR] Current payload length : " + String(len));
-      Serial.println("# [ERROR] Sensor.report() Failed payload is geather than: " + String(attr.max_payload_report));
+MG_LOG_I_S("# [ERROR] Current payload length : " + String(len));
+MG_LOG_I_S("# [ERROR] Sensor.report() Failed payload is geather than: " + String(attr.max_payload_report));
       coreMQTT->clearSensorBuffer(*attr.docSensor);
       return;
     }
   }
   else
   {
-    Serial.println(F("# Can't sensor.report Because Not set function \" sensor.add(key,value)\" before sensor.report or Overload Memory toJSONString"));
+    MG_LOG_I("# Can't sensor.report Because Not set function \" sensor.add(key,value)\" before sensor.report or Overload Memory toJSONString");
   }
 }
 
@@ -884,18 +866,14 @@ ResultReport MAGELLAN_MQTT::Sensor::sendRetransmit(String payload, RetransmitSet
     {
       if (countRetransmit > 0)
       {
-        Serial.print(F("\n#Retransmit count: "));
-        Serial.print(countRetransmit);
-        Serial.print(F(" on MsgId: "));
-        Serial.println(retrans.msgId);
+        MG_LOG_D_S("#Retransmit count: " + String(countRetransmit) + " on MsgId: " + String(retrans.msgId));
       }
       result.statusReport = report.send(payload, retrans.msgId);
       result.msgId = retrans.msgId;
       countRetransmit++;
       if (countRetransmit > retrans.repeat)
       {
-        Serial.print(F("\n# Report retransmit fail timeout on MsgId: "));
-        Serial.println(attr.matchMsgId_send);
+        MG_LOG_E_S("# Report retransmit fail timeout on MsgId: " + String(attr.matchMsgId_send));
 
         attr.reqRetransmit = false;
         break;
@@ -904,8 +882,7 @@ ResultReport MAGELLAN_MQTT::Sensor::sendRetransmit(String payload, RetransmitSet
     }
     if (attr.isMatchMsgId)
     {
-      Serial.print(F("# Finished report transmission MsgId: "));
-      Serial.println(attr.matchMsgId_send);
+      MG_LOG_I_S("# Finished report transmission MsgId: " + String(attr.matchMsgId_send));
       // Serial.println(countRetransmit);
       result.msgId = attr.matchMsgId_send; // assign msgId
       result.statusReport = true;
@@ -920,14 +897,13 @@ ResultReport MAGELLAN_MQTT::Sensor::sendRetransmit(String payload, RetransmitSet
     {
       if (func_on_disc != NULL)
       {
-        Serial.println(F("# connection lost from server"));
-        Serial.println(F("# Report retransmit trigger event on disconnect"));
+        MG_LOG_I("# connection lost from server");
+        MG_LOG_I("# Report retransmit trigger event on disconnect");
         func_on_disc();
       }
       else
       {
-        Serial.print(F("\n# Report retransmit fail connection lost on MsgId: "));
-        Serial.println(attr.matchMsgId_send);
+        MG_LOG_E_S("# Report retransmit fail connection lost on MsgId: " + String(attr.matchMsgId_send));
         break;
       }
     }
@@ -937,12 +913,12 @@ ResultReport MAGELLAN_MQTT::Sensor::sendRetransmit(String payload, RetransmitSet
       result.statusReport = false;
       attr.reqRetransmit = false;
       prev_millis_timeout = millis();
-      Serial.print(F("\n# Triger timeout from send retransmit"));
+      MG_LOG_E("# Triger timeout from send retransmit");
       break;
     }
     if (attr.inProcessOTA && attr.reqRetransmit)
     {
-      Serial.print(F("\n# In procress OTA cancel report with report retransmit"));
+      MG_LOG_I("# In procress OTA cancel report with report retransmit");
       result.msgId = attr.matchMsgId_send; // assign msgId
       result.statusReport = false;
       attr.reqRetransmit = false;
@@ -972,8 +948,8 @@ ResultReport MAGELLAN_MQTT::Sensor::report(RetransmitSetting &retrans)
         }
         else if (bufferPlayload.indexOf("null") == -1 && len > attr.max_payload_report)
         {
-          Serial.println("# [ERROR] Current payload length : " + String(len));
-          Serial.println("# [ERROR] Sensor.report() Failed payload is geather than: " + String(attr.max_payload_report));
+MG_LOG_I_S("# [ERROR] Current payload length : " + String(len));
+MG_LOG_I_S("# [ERROR] Sensor.report() Failed payload is geather than: " + String(attr.max_payload_report));
           coreMQTT->clearSensorBuffer(*attr.docSensor);
           result.msgId = retrans.msgId;
           return result;
@@ -981,7 +957,7 @@ ResultReport MAGELLAN_MQTT::Sensor::report(RetransmitSetting &retrans)
       }
       else
       {
-        Serial.println(F("# Can't sensor.report Because Not set function \" sensor.add(key,value)\" before sensor.report or Overload Memory toJSONString"));
+        MG_LOG_I("# Can't sensor.report Because Not set function \" sensor.add(key,value)\" before sensor.report or Overload Memory toJSONString");
       }
     }
     else
@@ -1020,7 +996,7 @@ void MAGELLAN_MQTT::Sensor::remove(String sensorKey)
   }
   else
   {
-    Serial.println("Not found [Key]: \"" + sensorKey + "\" to Remove");
+MG_LOG_I_S("Not found [Key]: \"" + sensorKey + "\" to Remove");
   }
 }
 
@@ -1039,31 +1015,31 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, String sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
-      Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
+MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else if (sensorValue.length() > 10000 && sensorValue.length() > coreMQTT->readBufferSensor(*attr.docSensor))
     {
-      Serial.println(F("# Preparing large data to JSONbuffer"));
+      MG_LOG_I("# Preparing large data to JSONbuffer");
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(sensorValue.length() + bufJSON.length() + 3000); // offset size
+      coreMQTT->adjustBufferSensor(sensorValue.length() + bufJSON.length() + 3000);
       deserializeJson(*attr.docSensor, bufJSON);
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-    Serial.println("Not found [Key]: \"" + sensorKey + "\" to update");
+MG_LOG_I_S("Not found [Key]: \"" + sensorKey + "\" to update");
   }
 }
 
@@ -1076,31 +1052,31 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, const char *sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
-      Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
+MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else if (strlen(sensorValue) > 10000 && strlen(sensorValue) > coreMQTT->readBufferSensor(*attr.docSensor))
     {
-      Serial.println(F("# Preparing large data to JSONbuffer"));
+      MG_LOG_I("# Preparing large data to JSONbuffer");
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(strlen(sensorValue) + bufJSON.length() + 3000); // offset size
+      coreMQTT->adjustBufferSensor(strlen(sensorValue) + bufJSON.length() + 3000);
       deserializeJson(*attr.docSensor, bufJSON);
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-    Serial.println("Not found [Key]: " + sensorKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
   }
 }
 
@@ -1113,21 +1089,21 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, int sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
-      Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
+MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-    Serial.println("Not found [Key]: " + sensorKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
   }
 }
 
@@ -1140,21 +1116,21 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, float sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
-      Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
+MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-    Serial.println("Not found [Key]: " + sensorKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
   }
 }
 
@@ -1167,21 +1143,21 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, boolean sensorValue)
     {
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
-      attr.docSensor = new DynamicJsonDocument(validateJSON_doc.max_size + 2048); // offset size
-      Serial.println("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
+MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-      Serial.println("Updated [Key]: " + sensorKey);
+MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-    Serial.println("Not found [Key]: " + sensorKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
   }
 }
 
@@ -1204,7 +1180,7 @@ void MAGELLAN_MQTT::Sensor::Location::add(String LocationKey, String latitude, S
   }
   else
   {
-    Serial.println("# [" + LocationKey + "] Can't add Location latitude or longtitude is invalid (not number)");
+MG_LOG_I_S("# [" + LocationKey + "] Can't add Location latitude or longtitude is invalid (not number)");
   }
 }
 
@@ -1217,12 +1193,12 @@ void MAGELLAN_MQTT::Sensor::Location::update(String LocationKey, double latitude
     sprintf(b_lat, "%f", latitude);
     sprintf(b_lng, "%f", longtitude);
     String location = String(b_lat) + "," + String(b_lng);
-    Serial.println("Updated [Key]: " + LocationKey);
+MG_LOG_I_S("Updated [Key]: " + LocationKey);
     coreMQTT->updateSensor(LocationKey, location, *attr.docSensor);
   }
   else
   {
-    Serial.println("Not found [Key]: " + LocationKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + LocationKey + " to update");
   }
 }
 
@@ -1233,17 +1209,17 @@ void MAGELLAN_MQTT::Sensor::Location::update(String LocationKey, String latitude
     if (coreMQTT->findKey(LocationKey, *attr.docSensor))
     {
       String location = String(latitude) + "," + String(longtitude);
-      Serial.println("Updated [Key]: " + LocationKey);
+MG_LOG_I_S("Updated [Key]: " + LocationKey);
       coreMQTT->updateSensor(LocationKey, location, *attr.docSensor);
     }
     else
     {
-      Serial.println("Not found [Key]: \"" + LocationKey + "\" to update");
+MG_LOG_I_S("Not found [Key]: \"" + LocationKey + "\" to update");
     }
   }
   else
   {
-    Serial.println("# [" + LocationKey + "] Can't update Location latitude or longtitude is invalid (not number)");
+MG_LOG_I_S("# [" + LocationKey + "] Can't update Location latitude or longtitude is invalid (not number)");
   }
 }
 
@@ -1254,9 +1230,9 @@ void MAGELLAN_MQTT::Sensor::clear()
 
 void MAGELLAN_MQTT::Sensor::setJSONBufferSize(size_t JsonBuffersize)
 {
-  Serial.print("# Set JSON buffer size: " + String(JsonBuffersize));
+  MG_LOG_I_S("# Set JSON buffer size: " + String(JsonBuffersize));
   coreMQTT->adjustBufferSensor(JsonBuffersize);
-  Serial.println(" Status: " + String((readJSONBufferSize() == (int)JsonBuffersize) ? "Success" : "Fail"));
+  MG_LOG_I_S(" Status: " + String((readJSONBufferSize() == (int)JsonBuffersize) ? "Success" : "Fail"));
 }
 int MAGELLAN_MQTT::Sensor::readJSONBufferSize()
 {
@@ -1267,7 +1243,7 @@ void MAGELLAN_MQTT::ClientConfig::add(String clientConfigKey, String clientConfi
 {
   if (clientConfigValue == "null")
   {
-    Serial.println("# add [Key] \"" + clientConfigKey + "\" failed, this function does not allow to set value \"null\"");
+MG_LOG_I_S("# add [Key] \"" + clientConfigKey + "\" failed, this function does not allow to set value \"null\"");
   }
   else
   {
@@ -1279,7 +1255,7 @@ void MAGELLAN_MQTT::ClientConfig::add(String clientConfigKey, const char *client
 {
   if (clientConfigValue == "null")
   {
-    Serial.println("# add [Key] " + clientConfigKey + " failed, this function does not allow to set value \"null\"");
+MG_LOG_I_S("# add [Key] " + clientConfigKey + " failed, this function does not allow to set value \"null\"");
   }
   else
   {
@@ -1318,7 +1294,7 @@ void MAGELLAN_MQTT::ClientConfig::save()
   }
   else
   {
-    Serial.println(F("# Can't clientConfig.save Because Not set function \" client.add(key,value)\" before clientConfig.save"));
+    MG_LOG_I("# Can't clientConfig.save Because Not set function \" client.add(key,value)\" before clientConfig.save");
   }
 }
 
@@ -1335,7 +1311,7 @@ void MAGELLAN_MQTT::ClientConfig::remove(String clientConfigKey)
   }
   else
   {
-    Serial.println("Not found [Key]: \"" + clientConfigKey + "\" to Remove");
+MG_LOG_I_S("Not found [Key]: \"" + clientConfigKey + "\" to Remove");
   }
 }
 
@@ -1348,12 +1324,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, String clientCo
 {
   if (coreMQTT->findKey(clientConfigKey, attr.docClientConf))
   {
-    Serial.println("Updated [Key]: " + clientConfigKey);
+MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-    Serial.println("Not found [Key]: " + clientConfigKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1361,12 +1337,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, const char *cli
 {
   if (findKey(clientConfigKey))
   {
-    Serial.println("Updated [Key]: " + clientConfigKey);
+MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-    Serial.println("Not found [Key]: " + clientConfigKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1374,12 +1350,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, int clientConfi
 {
   if (findKey(clientConfigKey))
   {
-    Serial.println("Updated [Key]: " + clientConfigKey);
+MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-    Serial.println("Not found [Key]: " + clientConfigKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1387,12 +1363,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, float clientCon
 {
   if (findKey(clientConfigKey))
   {
-    Serial.println("Updated [Key]: " + clientConfigKey);
+MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-    Serial.println("Not found [Key]: " + clientConfigKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1400,12 +1376,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, boolean clientC
 {
   if (findKey(clientConfigKey))
   {
-    Serial.println("Updated [Key]: " + clientConfigKey);
+MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-    Serial.println("Not found [Key]: " + clientConfigKey + " to update");
+MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1420,23 +1396,23 @@ void MAGELLAN_MQTT::checkUpdate_inside()
   this->registerInfoOTA();
   if (!attr.inProcessOTA && attr.flagAutoOTA)
   {
-    Serial.println(F("#[Allow auto OTA]checkUpdate after open new connection or reconnect"));
+    MG_LOG_I("#[Allow auto OTA]checkUpdate after open new connection or reconnect");
     isUpToDate = this->OTA.checkUpdate();
     switch (isUpToDate)
     {
     case OTA_state::UNKNOWN_STATE:
-      Serial.println(F("#[Allow auto OTA] firmware profile is EMPTY or not set Publish"));
+      MG_LOG_I("#[Allow auto OTA] firmware profile is EMPTY or not set Publish");
       break;
     case OTA_state::OUT_OF_DATE:
-      Serial.println(F("#[Allow auto OTA] firmware profile is OUT_OF_DATE"));
-      Serial.println(F("#[Allow auto OTA] OTA Execute start!"));
+      MG_LOG_I("#[Allow auto OTA] firmware profile is OUT_OF_DATE");
+      MG_LOG_I("#[Allow auto OTA] OTA Execute start!");
       this->OTA.executeUpdate();
       break;
     case OTA_state::UP_TO_DATE:
-      Serial.println(F("#[Allow auto OTA] firmware profile is already UP_TO_DATE"));
+      MG_LOG_I("#[Allow auto OTA] firmware profile is already UP_TO_DATE");
       break;
     default:
-      Serial.println(F("#[Allow auto OTA] out of scope on checkUpdate"));
+      MG_LOG_I("#[Allow auto OTA] out of scope on checkUpdate");
       break;
     }
     attr.checkUpdate_inside = true;
@@ -1574,11 +1550,9 @@ void MAGELLAN_MQTT::OnTheAir::begin()
 {
   if (attr.calculate_chunkSize > 4096)
   {
-    Serial.print(F("#[Warning] activeOTA can't set chunk size: "));
-    Serial.print(attr.calculate_chunkSize);
-    Serial.print(F(" Chunk size Maximum is 4096 adjust chunk size to: "));
+    MG_LOG_I_S("#[Warning] activeOTA can't set chunk size: " + String(attr.calculate_chunkSize) + " Chunk size Maximum is 4096 adjust chunk size to: 4096");
     attr.calculate_chunkSize = 4096;
-    Serial.println(attr.calculate_chunkSize);
+    MG_LOG_I_S(attr.calculate_chunkSize);
     coreMQTT->activeOTA(attr.calculate_chunkSize, true);
   }
   else
@@ -1633,9 +1607,9 @@ boolean MAGELLAN_MQTT::OnTheAir::downloadFirmware(unsigned int fw_chunkPart, siz
 
   if (coreMQTT->OTA_info.firmwareTotalSize <= 0 && !coreMQTT->OTA_info.isReadyOTA)
   {
-    Serial.println(F("# [Warning] Can't downloadFirmware"));
-    Serial.println(F("# Don't have firmware OTA information in save or the thing don't have firmware OTA"));
-    Serial.println(F("# Make sure you get firmware Information first"));
+    MG_LOG_I("# [Warning] Can't downloadFirmware");
+    MG_LOG_I("# Don't have firmware OTA information in save or the thing don't have firmware OTA");
+    MG_LOG_I("# Make sure you get firmware Information first");
     statusDL = false;
   }
   else
@@ -1760,11 +1734,11 @@ OTA_state MAGELLAN_MQTT::OnTheAir::checkUpdate()
 {
   if (attr.usingCheckUpdate)
   {
-    Serial.println(F("# Debug protect debounce using checkUpdate"));
+    MG_LOG_I("# Debug protect debounce using checkUpdate");
     return coreMQTT->OTA_info.firmwareIsUpToDate;
   }
-  Serial.println(F("# Check Update"));
-  Serial.println(F("# Waiting for response"));
+  MG_LOG_I("# Check Update");
+  MG_LOG_I("# Waiting for response");
   coreMQTT->OTA_info.firmwareIsUpToDate = OTA_state::UNKNOWN_STATE;
   checkUntil_end = false;
   attr.usingCheckUpdate = true;
@@ -1786,11 +1760,11 @@ OTA_state MAGELLAN_MQTT::OnTheAir::checkUpdate()
         if (countCheckUpdate > maxCheckUpdate)
         {
           checkUntil_end = true;
-          Serial.println(F(""));
-          Serial.println(F("# ====================================="));
-          Serial.println(F("# No  response from request firmware information"));
-          Serial.println(F("# ====================================="));
-          Serial.println(F(""));
+          MG_LOG_I("");
+          MG_LOG_I("# =====================================");
+          MG_LOG_I("# No  response from request firmware information");
+          MG_LOG_I("# =====================================");
+          MG_LOG_I("");
           countCheckUpdate = 0;
           break;
         }
@@ -1811,16 +1785,16 @@ OTA_state MAGELLAN_MQTT::OnTheAir::checkUpdate()
       {
         countCheckUpdate = 0;
         // checkUntil_end = true;
-        Serial.println(F("# ====================================="));
-        Serial.println(F("# Debug Device not found or don't have FOTA Profile"));
-        Serial.println(F("# ====================================="));
+        MG_LOG_I("# =====================================");
+        MG_LOG_I("# Debug Device not found or don't have FOTA Profile");
+        MG_LOG_I("# =====================================");
       }
       if (!attr.usingCheckUpdate)
       {
         checkUntil_end = true;
-        Serial.println(F("# ====================================="));
-        Serial.println(F("# Debug already get response"));
-        Serial.println(F("# ====================================="));
+        MG_LOG_I("# =====================================");
+        MG_LOG_I("# Debug already get response");
+        MG_LOG_I("# =====================================");
         break;
       }
       check_prvMillis = millis();
@@ -1828,9 +1802,9 @@ OTA_state MAGELLAN_MQTT::OnTheAir::checkUpdate()
     if (!attr.usingCheckUpdate && checkUntil_end)
     {
       checkUntil_end = true;
-      Serial.println(F("# ====================================="));
-      Serial.println(F("# Debug Timeout when loop infinity from spam"));
-      Serial.println(F("# ====================================="));
+      MG_LOG_I("# =====================================");
+      MG_LOG_I("# Debug Timeout when loop infinity from spam");
+      MG_LOG_I("# =====================================");
       break;
     }
   }
@@ -1847,13 +1821,13 @@ void MAGELLAN_MQTT::OnTheAir::executeUpdate()
 
   if (!exc_until_info_fwReady)
   {
-    Serial.println(F("# Dubug protect debounce spam function execute"));
+    MG_LOG_I("# Dubug protect debounce spam function execute");
     return;
   }
   countIfUnknownVersion = 0;
   exc_until_info_fwReady = false;
   attr.usingCheckUpdate = false;
-  Serial.println(F("# Execute Update!!!"));
+  MG_LOG_I("# Execute Update!!!");
   coreMQTT->registerDownloadOTA();
   coreMQTT->registerInfoOTA();
   attr.flagAutoOTA = true;
@@ -1873,12 +1847,12 @@ void MAGELLAN_MQTT::OnTheAir::executeUpdate()
         coreMQTT->requestFW_Info(); // getFirmwareInfo
         if (countIfUnknownVersion > MaxIfUnknownVersion)
         {
-          Serial.println(F(""));
-          Serial.println(F("# ====================================="));
-          Serial.println(F("# No response from request firmware information"));
-          Serial.println(F("# Execute cancel"));
-          Serial.println(F("# ====================================="));
-          Serial.println(F(""));
+          MG_LOG_I("");
+          MG_LOG_I("# =====================================");
+          MG_LOG_I("# No response from request firmware information");
+          MG_LOG_I("# Execute cancel");
+          MG_LOG_I("# =====================================");
+          MG_LOG_I("");
           countIfUnknownVersion = 0;
           if (attr.isBypassAutoUpdate) // back to existing
           {
@@ -1894,11 +1868,11 @@ void MAGELLAN_MQTT::OnTheAir::executeUpdate()
       }
       else if (OTA_info.firmwareIsUpToDate == OTA_state::UP_TO_DATE)
       {
-        Serial.println(F(""));
-        Serial.println(F("# ====================================="));
-        Serial.println(F("# Firmware is up to date execute cancel"));
-        Serial.println(F("# ====================================="));
-        Serial.println(F(""));
+        MG_LOG_I("");
+        MG_LOG_I("# =====================================");
+        MG_LOG_I("# Firmware is up to date execute cancel");
+        MG_LOG_I("# =====================================");
+        MG_LOG_I("");
         exc_until_info_fwReady = true;
         if (attr.isBypassAutoUpdate)
         {
@@ -1915,30 +1889,30 @@ void MAGELLAN_MQTT::OnTheAir::executeUpdate()
         exc_until_info_fwReady = attr.startReqDownloadOTA;
         if (!attr.inProcessOTA)
         {
-          Serial.println(F(""));
-          Serial.println(F("# ====================================="));
-          Serial.println(F("# Execute start"));
-          Serial.println(F("# ====================================="));
-          Serial.println(F(""));
+          MG_LOG_I("");
+          MG_LOG_I("# =====================================");
+          MG_LOG_I("# Execute start");
+          MG_LOG_I("# =====================================");
+          MG_LOG_I("");
         }
       }
     }
     if (OTA_info.firmwareIsUpToDate == OTA_state::OUT_OF_DATE && exc_until_info_fwReady)
     {
       exc_until_info_fwReady = true;
-      Serial.println(F("# Debug Uptodate but infinity loop [UP_TO_DATE]"));
+      MG_LOG_I("# Debug Uptodate but infinity loop [UP_TO_DATE]");
       break;
     }
     else if (OTA_info.firmwareIsUpToDate == OTA_state::UNKNOWN_STATE && exc_until_info_fwReady)
     {
       exc_until_info_fwReady = true;
-      Serial.println(F("# Debug Uptodate but infinity loop [UNKNOWN]"));
+      MG_LOG_I("# Debug Uptodate but infinity loop [UNKNOWN]");
       break;
     }
     if (!coreMQTT->isConnected())
     {
       exc_until_info_fwReady = true;
-      Serial.println(F("# Debug client disconnect while OTA"));
+      MG_LOG_I("# Debug client disconnect while OTA");
       break;
     }
   }
@@ -1957,7 +1931,7 @@ void MAGELLAN_MQTT::OnTheAir::autoUpdate(boolean flagSetAuto)
     attr.isBypassAutoUpdate = false;
     coreMQTT->registerDownloadOTA();
   }
-  Serial.println("# Set auto update mode: " + String((attr.flagAutoOTA == true) ? "ENABLE" : "DISABLE"));
+MG_LOG_I_S("# Set auto update mode: " + String((attr.flagAutoOTA == true) ? "ENABLE" : "DISABLE"));
 }
 
 boolean MAGELLAN_MQTT::OnTheAir::getAutoUpdate()
@@ -1977,7 +1951,7 @@ boolean MAGELLAN_MQTT::OnTheAir::start()
 {
   if (!flag_startOTA)
   {
-    Serial.println(F("# Start OTA!"));
+    MG_LOG_I("# Start OTA!");
     return downloadFirmware(0, attr.calculate_chunkSize);
   }
   return false;
@@ -2024,7 +1998,7 @@ String MAGELLAN_MQTT::CREDENTIAL::getPreviousThingIdentifier()
     fileSys.begin();
   if (!credentialFile.checkPreviousCredentialFile())
   {
-    Serial.println(F("# not found previous credential"));
+    MG_LOG_I("# not found previous credential");
     return String();
   }
   return credentialFile.readSpacificPreviousCredentialFile("thingIdentifier");
@@ -2035,7 +2009,7 @@ String MAGELLAN_MQTT::CREDENTIAL::getPreviousThingSecret()
     fileSys.begin();
   if (!credentialFile.checkPreviousCredentialFile())
   {
-    Serial.println(F("# not found previous credential"));
+    MG_LOG_I("# not found previous credential");
     return String();
   }
   return credentialFile.readSpacificPreviousCredentialFile("thingSecret");
@@ -2058,7 +2032,7 @@ void MAGELLAN_MQTT::CREDENTIAL::reset()
 {
   if (!fileSys.isFileSystemInit)
     fileSys.begin();
-  Serial.println(F("# Reset clean data credential"));
+  MG_LOG_I("# Reset clean data credential");
   credentialFile.deletePreviousCredentialFile();
   credentialFile.deleteCredentialFile();
 }
@@ -2067,10 +2041,10 @@ boolean MAGELLAN_MQTT::CREDENTIAL::recovery()
 {
   if (!fileSys.isFileSystemInit)
     fileSys.begin();
-  Serial.println(F("# Recovery credential"));
+  MG_LOG_I("# Recovery credential");
   if (!credentialFile.checkPreviousCredentialFile())
   {
-    Serial.println(F("# Not found previous credential"));
+    MG_LOG_I("# Not found previous credential");
     return false;
   }
   String buff_prev = credentialFile.readPreviousCredentialFile();
@@ -2100,7 +2074,7 @@ void adjust_BufferForMedia(size_t len_payload)
   }
   else
   {
-    Serial.println("# Sensors payload is too large geater than: " + String(attr.max_payload_report));
+MG_LOG_I_S("# Sensors payload is too large geater than: " + String(attr.max_payload_report));
     return;
   }
 }
@@ -2108,12 +2082,19 @@ void adjust_BufferForMedia(size_t len_payload)
 JsonDocUtils readSafetyCapacity_Json_doc(JsonDocument &ref_docs)
 {
   JsonDocUtils JsonDocInfo;
+#if !MAGELLAN_USE_ARDUINOJSON7
   size_t mmr_usage = ref_docs.memoryUsage();
   size_t max_size = ref_docs.memoryPool().capacity();
   size_t safety_size = max_size * (0.97);
   JsonDocInfo.used = mmr_usage;
   JsonDocInfo.max_size = max_size;
   JsonDocInfo.safety_size = safety_size;
+#else
+  const size_t max_size = 8192;
+  JsonDocInfo.used = measureJson(ref_docs);
+  JsonDocInfo.max_size = max_size;
+  JsonDocInfo.safety_size = static_cast<size_t>(max_size * 0.97);
+#endif
   return JsonDocInfo;
 }
 

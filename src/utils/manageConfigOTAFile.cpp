@@ -46,7 +46,7 @@ JsonObject manageConfigOTAFile::readObjectConfigFileOTA()
   String buffReadConfigOTA = readConfigFileOTA();
   JsonObject buffer;
   OTAdoc.clear();
-  if(buffReadConfigOTA != NULL)
+  if(buffReadConfigOTA.length() > 0)
   {
     DeserializationError error = deserializeJson(OTAdoc, buffReadConfigOTA);
     buffer = OTAdoc.as<JsonObject>();
@@ -60,7 +60,7 @@ JsonObject manageConfigOTAFile::readObjectLastedOTA()
   String buffReadConfigOTA = readLastedOTA();
   JsonObject buffer;
   OTAdoc.clear();
-  if(buffReadConfigOTA != NULL)
+  if(buffReadConfigOTA.length() > 0)
   {
     DeserializationError error = deserializeJson(OTAdoc, buffReadConfigOTA);
     buffer = OTAdoc.as<JsonObject>();
@@ -79,7 +79,7 @@ String manageConfigOTAFile::readSpacificFromConfFile(String readKey)
 boolean manageConfigOTAFile::saveProfileOTA(JsonObject dataOTA, String stateOTA)
 {  
     OTAdoc.clear();
-    if(stateOTA != NULL && dataOTA.size() > 0)
+    if(stateOTA.length() > 0 && dataOTA.size() > 0)
     {
         OTAdoc = dataOTA;
         OTAdoc.remove("Code");
@@ -108,7 +108,7 @@ boolean manageConfigOTAFile::saveLastedOTA(String lastedDataOTA)
   bool saveFile = false;
   JsonObject buffer;
   OTAdoc.clear();
-  if(lastedDataOTA.c_str() != NULL)
+  if(lastedDataOTA.length() > 0)
   {
     DeserializationError error = deserializeJson(OTAdoc, lastedDataOTA.c_str());
     buffer = OTAdoc.as<JsonObject>();
@@ -138,13 +138,10 @@ boolean manageConfigOTAFile::saveLastedOTA(String lastedDataOTA)
 
 boolean manageConfigOTAFile::saveSuccessOrFail(String stateOTA)
 {
-    JsonObject bufferProfile = readObjectConfigFileOTA();
-
-    StaticJsonDocument<512> docsBuffer = bufferProfile;
-    bufferProfile.remove("Code");
-    docsBuffer["status"] = stateOTA.c_str();
+    readObjectConfigFileOTA();  // re-populates OTAdoc
+    OTAdoc["status"] = stateOTA.c_str();
     String ProfileUpdate;
-    serializeJson(docsBuffer, ProfileUpdate);
+    serializeJson(OTAdoc, ProfileUpdate);
     return fileSys.writeFile(configOTAFilePath, ProfileUpdate.c_str());
 }
 

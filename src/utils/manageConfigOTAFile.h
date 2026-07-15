@@ -15,7 +15,7 @@
 #endif
 #include <vector>
 #include "FileSystem.h"
-#include "./ArduinoJson-v6.18.3.h"
+#include "./MAGELLAN_LIB_CONF.h"
 // typedef std::vector<String> ListFileString;
 
 class manageConfigOTAFile
@@ -23,7 +23,11 @@ class manageConfigOTAFile
 private:
   const char *configOTAFilePath = "/configOTAFile.json"; // save every event init fail success
   const char *lastedOTAPath = "/lastedOTAFile.json";     // save only success
+#if !MAGELLAN_USE_ARDUINOJSON7
   StaticJsonDocument<512> OTAdoc;
+#else
+  JsonDocument OTAdoc;
+#endif
 
 public:
   void beginFileSystem();

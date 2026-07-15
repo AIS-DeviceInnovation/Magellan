@@ -110,7 +110,6 @@ ListFileString FileSystem::listFile(const char* dir_name, fs::FS &fs)
 String FileSystem::readFile(const char* path, fs::FS &fs)
 {
     DEBUG_SERIAL.printf("Reading file: %s\r\n", path);
-    char *buffer;
    #ifdef ESP32
       File file = fs.open(path);
    #elif defined ESP8266
@@ -122,13 +121,9 @@ String FileSystem::readFile(const char* path, fs::FS &fs)
       return "null";
     }
     DEBUG_SERIAL.println(F("- read from file:"));
-    while(file.available())
-    {
-      buffer = new char[file.size() +2];
-      strcpy(buffer, file.readString().c_str());
-    }
+      String content = file.readString();
     file.close();
-    return String(buffer);
+      return content;
 }
 
 boolean FileSystem::writeFile(const char* path, const char * message, fs::FS &fs)
