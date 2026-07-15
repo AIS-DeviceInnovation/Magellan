@@ -74,7 +74,7 @@ public:
 
   void checkModem();
   void handleModemMagellan(); // handle modem connection and reconnect mqtt when ppp connected
-  void initGSM();     // initialize GSM modem is using function above running by correctly sequence.
+  void initGSM();             // initialize GSM modem is using function above running by correctly sequence.
   TinyGsmClient &getGSMClient();
   TinyGsm &getGSMModem();
 
@@ -117,6 +117,7 @@ public:
 
     void begin();
     void disable();
+    void beginAGPS();
     boolean available();
     float readLatitude();
     float readLongitude();
@@ -128,6 +129,7 @@ public:
     GPS_Data getCurrentGPSData();
 
   private:
+    bool isGPSinitialized = false;
     GPS_SIM7600E gps_internal;
     GPS_Data _gpsData;
   } gps;

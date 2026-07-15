@@ -28,7 +28,8 @@ bool GPS_SIM7600E::gpsIsOn(TinyGsm &modem)
 
 bool GPS_SIM7600E::available(TinyGsm &modem)
 {
-    if (!gpsIsOn(modem)) return false;
+    if (!gpsIsOn(modem))
+        return false;
     GPS_Data temp;
     return gpsRead(modem, temp);
 }
@@ -107,4 +108,59 @@ void GPS_SIM7600E::gpsInit(TinyGsm &modem)
     {
         this->gpsBegin(modem);
     }
+}
+
+bool GPS_SIM7600E::gpsConfigureAGPS(TinyGsm &modem)
+{
+    // GPS + GLONASS
+    modem.sendAT("+CGNSSMODE=3");
+    if (modem.waitResponse() != 1)
+        return false;
+
+    // SUPL Server
+    modem.sendAT("+CGPSURL=\"supl.google.com:7276\"");
+    if (modem.waitResponse() != 1)
+        return false;
+
+    // Disable SSL
+    modem.sendAT("+CGPSSSL=0");
+    if (modem.waitResponse() != 1)
+        return false;
+
+    return true;
+}
+
+bool GPS_SIM7600E::gpsWaitForFix(TinyGsm &modem,
+                                 uint32_t timeoutMs,
+                                 uint32_t pollMs)
+{
+    uint32_t start = millis();
+
+    while (millis() - start < timeoutMs)
+    {
+        GPS_Data gps;
+
+        if (gpsRead(modem, gps) && gps.valid)
+        {
+            return true;
+        }
+
+        delay(pollMs);
+    }
+
+    return false;
+}
+
+bool GPS_SIM7600E::gpsBeginAGPS(TinyGsm &modem,
+                                uint32_t timeoutMs)
+{
+    if (!gpsConfigureAGPS(modem))
+        return false;
+
+    // Start GPS with AGPS
+    modem.sendAT("+CGPS=1,2");
+    if (modem.waitResponse(10000L) != 1)
+        return false;
+
+    return gpsWaitForFix(modem, timeoutMs);
 }
