@@ -45,6 +45,21 @@ HardwareSerial _SerialAT(1);
 TinyGsm _modem(_SerialAT);
 TinyGsmClient _gsmClient(_modem);
 
+static bool _serialAtStarted = false;
+
+static bool waitForModemATReady(uint8_t maxRetries, uint16_t delayMs)
+{
+  for (uint8_t retry = 0; retry < maxRetries; ++retry)
+  {
+    if (_modem.testAT(1000))
+    {
+      return true;
+    }
+    delay(delayMs);
+  }
+  return false;
+}
+
 TinyGsmClient &MAGELLAN_MQTT_4G_BOARD::getGSMClient()
 {
   return _gsmClient;
@@ -104,15 +119,32 @@ MAGELLAN_MQTT_4G_BOARD::MAGELLAN_MQTT_4G_BOARD() : MAGELLAN_MQTT(_gsmClient)
   };
 }
 
+// void MAGELLAN_MQTT_4G_BOARD::initSerialModem()
+// {
+//   _SerialAT.setRxBufferSize(4096 * 2);
+//   _SerialAT.begin(115200, SERIAL_8N1, PIN_MODEM_RX, PIN_MODEM_TX);
+//   delay(1000);
+//   if (!_modem.init())
+//   {
+//     _modem.init();
+//   }
+// }
+
 void MAGELLAN_MQTT_4G_BOARD::initSerialModem()
 {
-  _SerialAT.setRxBufferSize(4096 * 2);
-  _SerialAT.begin(115200, SERIAL_8N1, PIN_MODEM_RX, PIN_MODEM_TX);
-  delay(1000);
-  if (!_modem.init())
+  if (!_serialAtStarted)
   {
-    _modem.init();
+    _SerialAT.setRxBufferSize(4096 * 2);
+    _SerialAT.begin(115200, SERIAL_8N1, PIN_MODEM_RX, PIN_MODEM_TX);
+    _serialAtStarted = true;
+    delay(1000);
   }
+  else
+  {
+    // Keep UART active on warm-reset flows; avoid resizing while running.
+    delay(100);
+  }
+  _modem.init();
 }
 
 void MAGELLAN_MQTT_4G_BOARD::powerModem()
@@ -125,23 +157,70 @@ void MAGELLAN_MQTT_4G_BOARD::powerModem()
   delay(50);
 }
 
+// void MAGELLAN_MQTT_4G_BOARD::connectModem()
+// {
+//   MG_LOG_I("Connecting to mobile network...");
+//   int retry = 0;
+//   while (!_modem.gprsConnect(_apn))
+//   {
+//     MG_LOG_E_S("Failed to connect! Retry " + String(++retry) + "/10");
+//     delay(1000);
+
+//     if (retry >= 10)
+//     {
+//       MG_LOG_E("Max retries reached. Restarting ESP...");
+//       ESP.restart();
+//     }
+//   }
+//   MG_LOG_I("modem connected!");
+// }
+
+
 void MAGELLAN_MQTT_4G_BOARD::connectModem()
 {
+  if (_modem.isGprsConnected())
+  {
+    MG_LOG_I("GPRS already connected. Skip reconnect.");
+    return;
+  }
+
+  const uint8_t maxNetworkWaitRetries = 6;
+  uint8_t networkWaitRetry = 0;
+  while (!_modem.isNetworkConnected() && networkWaitRetry < maxNetworkWaitRetries)
+  {
+    MG_LOG_I_S("Waiting for network registration... " + String(networkWaitRetry + 1) + "/" + String(maxNetworkWaitRetries));
+    // Bounded wait so init path does not block forever when cell registration is unstable.
+    _modem.waitForNetwork(10000L, true);
+    delay(300);
+    networkWaitRetry++;
+  }
+
+  if (!_modem.isNetworkConnected())
+  {
+    MG_LOG_E("Network registration timeout. Restarting ESP...");
+    ESP.restart();
+    return;
+  }
+
   MG_LOG_I("Connecting to mobile network...");
-  int retry = 0;
+  uint8_t retry = 0;
+  const uint8_t maxGprsRetries = 10;
   while (!_modem.gprsConnect(_apn))
   {
-    MG_LOG_E_S("Failed to connect! Retry " + String(++retry) + "/10");
-    delay(1000);
+    retry++;
+    MG_LOG_E_S("Failed to connect! Retry " + String(retry) + "/" + String(maxGprsRetries));
+    delay(800);
 
-    if (retry >= 10)
+    if (retry >= maxGprsRetries)
     {
       MG_LOG_E("Max retries reached. Restarting ESP...");
       ESP.restart();
+      return;
     }
   }
   MG_LOG_I("modem connected!");
 }
+
 // void MAGELLAN_MQTT_4G_BOARD::checkModem()
 // {
 //   if (!_modem.isGprsConnected())
@@ -182,14 +261,67 @@ void MAGELLAN_MQTT_4G_BOARD::handleModemMagellan()
   }
 }
 
+// void MAGELLAN_MQTT_4G_BOARD::initGSM()
+// {
+//   MG_LOG_I("# ==== USE AIS 4G BOARD MODE INIT GSM ====");
+//   this->powerModem();
+//   delay(1000);
+//   this->initSerialModem();
+//   this->connectModem();
+//   getRadio();
+// }
+
+
+String _getSignalStrengthCategory(int dBm)
+{
+  if (dBm <= -113)
+    return "Very Poor";
+  else if (dBm > -113 && dBm <= -85)
+    return "Poor";
+  else if (dBm > -85 && dBm <= -70)
+    return "Fair";
+  else if (dBm > -70 && dBm <= -55)
+    return "Good";
+  else if (dBm > -55)
+    return "Excellent";
+
+  return "Unknown";
+}
+
+void _getRadio()
+{
+  MG_LOG_I("#========= Radio Quality information ==========");
+  int rssiNomalized = _modem.getSignalQuality();
+  int rssiDbm = mapRSSITodBm(rssiNomalized);
+  MG_LOG_I_S("Signal Strength: " + String(rssiNomalized));
+  MG_LOG_I_S("Signal Strength(dBm): " + String(rssiDbm));
+  MG_LOG_I_S("Description: " + String(_getSignalStrengthCategory(rssiDbm)));
+}
+
 void MAGELLAN_MQTT_4G_BOARD::initGSM()
 {
   MG_LOG_I("# ==== USE AIS 4G BOARD MODE INIT GSM ====");
-  this->powerModem();
-  delay(1000);
   this->initSerialModem();
+
+  // On ESP32 warm reset, SIM7600 can still be alive; avoid unnecessary power toggles.
+  if (!waitForModemATReady(3, 300))
+  {
+    MG_LOG_I("Modem not responding, toggling power key...");
+    this->powerModem();
+    // SIM7600 may need several seconds to boot and accept AT after PWRKEY pulse.
+    delay(2500);
+    this->initSerialModem();
+  }
+
+  if (!waitForModemATReady(12, 500))
+  {
+    MG_LOG_E("Modem AT not responding after power cycle. Restarting ESP...");
+    ESP.restart();
+    return;
+  }
+
   this->connectModem();
-  getRadio();
+  _getRadio();
 }
 
 void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)

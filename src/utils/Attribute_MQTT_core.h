@@ -35,7 +35,7 @@ Released for private usage.
 
 #define _major_ver 1
 #define _feature_ver 4
-#define _enhance_ver 0
+#define _enhance_ver 1
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
