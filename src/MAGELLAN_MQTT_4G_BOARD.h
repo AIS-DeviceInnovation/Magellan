@@ -85,6 +85,8 @@ public:
   void initGSM();             // initialize GSM modem is using function above running by correctly sequence.
   TinyGsmClient &getGSMClient();
   TinyGsm &getGSMModem();
+  void onReconnect(cb_on_reconnect cb_recon_continue) override;
+  void onReconnectingLoop(cb_on_reconnect cb_recon_continue) override;
 
   void begin(Magellan_Setting _setting = setting);
   void disconnect();
@@ -164,6 +166,7 @@ public:
 private:
   void pubstate();
   NetworkModuleMode currentPreferedNetworkMode = NetworkModuleMode::Automatic;
+  void reinitializeGSM();
 
 protected:
 };

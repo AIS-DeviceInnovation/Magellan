@@ -92,20 +92,8 @@ public:
   // v1.1.0
   boolean matchingMsgId(int sendingMsgId, int incomingMsgId);
   void onDisconnect(cb_on_disconnect cb_disc);
-  void onReconnect(cb_on_reconnect cb_recon)
-  {
-    if (cb_recon)
-    {
-      this->coreMQTT->onReconn(cb_recon);
-    }
-  }
-  void onReconnectingLoop(cb_on_reconnect cb_recon_continue)
-  {
-    if (cb_recon_continue)
-    {
-      this->coreMQTT->onReconnContinue(cb_recon_continue);
-    }
-  }
+  virtual void onReconnect(cb_on_reconnect cb_recon);
+  virtual void onReconnectingLoop(cb_on_reconnect cb_recon_continue);
   struct CREDENTIAL
   {
     String getThingIdentifier();
