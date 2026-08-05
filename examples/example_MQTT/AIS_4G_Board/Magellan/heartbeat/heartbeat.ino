@@ -19,7 +19,6 @@ void loop()
 {
   magel.loop();
   magel.subscribesHandler([]() {
-    magel.subscribe.heartbeat.response(); // subscribe server heartbeat response
   });
   magel.interval(10, []() { // time interval function inside every 10 sec
 

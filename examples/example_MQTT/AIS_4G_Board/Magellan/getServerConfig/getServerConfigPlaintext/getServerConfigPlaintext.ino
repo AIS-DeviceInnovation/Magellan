@@ -24,7 +24,6 @@ void loop()
 {
   magel.loop();
   magel.subscribesHandler([]() {
-    magel.subscribe.serverConfig(PLAINTEXT); // subscribe server config content type PLAINTEXT
   });
   magel.interval(10, []() { // time interval function inside every 10000 millis
     magel.serverConfig.request(PLAINTEXT); // request server config content type PLAINTEXT

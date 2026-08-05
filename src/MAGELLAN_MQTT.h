@@ -37,7 +37,6 @@ Modified: 22 dec 2025.
  *  - Adapted for AIS 4G Board
  */
 
-
 #ifndef MAGELLAN_MQTT_H
 #define MAGELLAN_MQTT_H
 
@@ -57,6 +56,7 @@ extern Magellan_Setting setting;
 class MAGELLAN_MQTT : private MAGELLAN_MQTT_device_core
 {
 private:
+  void pubstate();
   void checkUpdate_inside();
   void beginCustom(String _thingIden, String _thingSencret, String _imei, String _host = _host_production, int _port = mgPort, uint16_t bufferSize = defaultBuffer);
   // 1.1.1
@@ -92,7 +92,20 @@ public:
   // v1.1.0
   boolean matchingMsgId(int sendingMsgId, int incomingMsgId);
   void onDisconnect(cb_on_disconnect cb_disc);
-
+  void onReconnect(cb_on_reconnect cb_recon)
+  {
+    if (cb_recon)
+    {
+      this->coreMQTT->onReconn(cb_recon);
+    }
+  }
+  void onReconnectingLoop(cb_on_reconnect cb_recon_continue)
+  {
+    if (cb_recon_continue)
+    {
+      this->coreMQTT->onReconnContinue(cb_recon_continue);
+    }
+  }
   struct CREDENTIAL
   {
     String getThingIdentifier();

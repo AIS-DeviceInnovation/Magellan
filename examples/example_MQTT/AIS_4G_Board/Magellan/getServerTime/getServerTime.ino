@@ -21,7 +21,6 @@ void loop()
 {
   magel.loop();
   magel.subscribesHandler([]() {
-    magel.subscribe.getServerTime(PLAINTEXT);
   });
   magel.interval(5, []() {
     magel.getServerTime(); // request time from magellan server

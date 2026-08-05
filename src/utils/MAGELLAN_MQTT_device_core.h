@@ -134,7 +134,8 @@ struct RetransmitSetting
 };
 
 typedef std::function<void(void)> cb_on_disconnect;
-
+typedef std::function<void(void)> cb_on_connect;
+typedef std::function<void(void)> cb_on_reconnect;
 struct ResultReport
 {
   bool statusReport = false;
@@ -198,7 +199,7 @@ public:
   void begin(String _thingIden, String _thingSencret, String _imei, uint16_t bufferSize = defaultOTABuffer);
   void beginCustom(String _client_id, String _host, int _port, uint16_t bufferSize); //
   void initMQTTClient(String _client_id, uint16_t bufferSize = defaultOTABuffer);    //
-  void magellanCentric();
+  void magellanCentric(String endpoint = _host_centric, int port = mgCentricPort); //
 
   String getHostName(); //
   String readToken();
@@ -260,7 +261,6 @@ public:
 
   void interval_ms(unsigned long ms, func_callback_ms cb_ms);
   void registerList(func_callback_registerList cb_regisList);
-
   // interface MAGELLANJSON
 #if !MAGELLAN_USE_ARDUINOJSON7
   StaticJsonDocument<256> docJson;
@@ -309,8 +309,22 @@ public:
   void reconnect();  // add on
   void disconnect(); // add on
   void setCallback_msgHandle();
+  void onReconn(cb_on_reconnect cb_recon){
+    if (cb_recon)
+    {
+      this->func_on_recon = cb_recon;
+    }
+  }
+  void onReconnContinue(cb_on_reconnect cb_recon_continue){
+    if (cb_recon_continue)
+    {
+      this->func_on_recon_continue = cb_recon_continue;
+    }
+  }
 
 private:
+  cb_on_reconnect func_on_recon;
+  cb_on_reconnect func_on_recon_continue; 
   int _default_bufferSize = _default_OverBufferSize;
   boolean flagToken = false;
   String client_id;

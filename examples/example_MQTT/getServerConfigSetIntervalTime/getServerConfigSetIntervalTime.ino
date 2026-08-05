@@ -72,9 +72,8 @@ void loop()
 {
   magel.loop();
   reconnectWiFi(magel);
-  magel.subscribes([]()
+  magel.subscribesHandler([]()
                    {
-                     magel.subscribe.serverConfig(PLAINTEXT);     // subscribe server config content type PLAINTEXT
                      magel.serverConfig.request(KeyIntervalTime); // request server config Key INTERVAL <- create server config profiles with key INTERVAL and set value
                    });
   magel.interval(IntervalSecond, []() { // time interval function inside every n sec

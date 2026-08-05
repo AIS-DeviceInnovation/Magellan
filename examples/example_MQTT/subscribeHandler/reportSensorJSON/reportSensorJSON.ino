@@ -38,9 +38,8 @@ void loop()
 {
   magel.loop();
   //{1} prevous version subscribes must set function remain subscribe after connected to magellan server itself
-  // magel.subscribes([]()
+  // magel.subscribesHandler([]()
   // {
-  //   magel.subscribe.report.response(); // optional register for get Resp report
   // });
 
   //{2} NEW!! version subscribes handler auto subscribe follow by register function callback in setup section

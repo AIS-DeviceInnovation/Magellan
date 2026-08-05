@@ -49,8 +49,7 @@ void loop()
 {
   magel.loop();
   reconnectWiFi(magel);
-  magel.subscribes([](){
-    magel.subscribe.control(); // subscribe server control content type JSON
+  magel.subscribesHandler([](){
   });
   magel.interval(10,[](){ //time interval function inside every 10000 millis
 

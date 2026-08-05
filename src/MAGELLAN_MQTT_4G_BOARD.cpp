@@ -175,7 +175,6 @@ void MAGELLAN_MQTT_4G_BOARD::powerModem()
 //   MG_LOG_I("modem connected!");
 // }
 
-
 void MAGELLAN_MQTT_4G_BOARD::connectModem()
 {
   if (_modem.isGprsConnected())
@@ -271,7 +270,6 @@ void MAGELLAN_MQTT_4G_BOARD::handleModemMagellan()
 //   getRadio();
 // }
 
-
 String _getSignalStrengthCategory(int dBm)
 {
   if (dBm <= -113)
@@ -322,6 +320,13 @@ void MAGELLAN_MQTT_4G_BOARD::initGSM()
 
   this->connectModem();
   _getRadio();
+
+  NetworkModuleMode mode = this->GSMModem.getNetworkMode();
+  this->currentPreferedNetworkMode = mode;
+  Serial.print(F("NetworkBand Mode: "));
+  int networkMode = static_cast<int>(mode);
+  Serial.println(this->GSMModem.networkModeToString(mode).c_str());
+  MG_LOG_I("#==============================================");
 }
 
 void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
@@ -401,6 +406,15 @@ void MAGELLAN_MQTT_4G_BOARD::begin(Magellan_Setting _setting)
   }
 
   this->builtInSensor.begin();
+
+  this->pubstate();
+}
+
+void MAGELLAN_MQTT_4G_BOARD::pubstate()
+{
+  this->clientConfig.add("versionSDK", String("AIS 4G OTHER") + "-" + String(lib_ver));
+  this->clientConfig.add("preferredMode", this->GSMModem.networkModeToString(this->currentPreferedNetworkMode));
+  this->clientConfig.save();
 }
 
 void MAGELLAN_MQTT_4G_BOARD::disconnect()
@@ -465,7 +479,7 @@ void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
     MG_LOG_D_S("Centric ThingSecret: " + String(setting.ThingSecret));
 
     parent->coreMQTT->setAuthMagellan(setting.ThingIdentifier, setting.ThingSecret, setting.IMEI);
-    parent->coreMQTT->magellanCentric();
+    parent->coreMQTT->magellanCentric(this->_host, this->_port); // Connect to Centric MQTT broker with credentials
     // Connect to MQTT broker with credentials
     MG_LOG_I("Connecting to Centric MQTT...");
   }
@@ -479,6 +493,8 @@ void MAGELLAN_MQTT_4G_BOARD::Centric::begin(Magellan_Setting _setting)
     ESP.restart();
   }
   this->parent->builtInSensor.begin();
+
+  this->parent->pubstate();
 }
 
 int16_t MAGELLAN_MQTT_4G_BOARD::getSignalStrength()
@@ -692,6 +708,67 @@ LTE_Signal_INFO MAGELLAN_MQTT_4G_BOARD::SignalAnalysis::getDetailedSignal()
     }
   }
   return sig;
+}
+
+NetworkModuleMode MAGELLAN_MQTT_4G_BOARD::ConnectivityModem::getNetworkMode()
+{
+  TinyGsm &modem = this->parent->getGSMModem();
+  const int16_t mode = modem.getNetworkMode();
+
+  switch (mode)
+  {
+  case static_cast<int>(NetworkModuleMode::GSM_2G_Only):
+    return NetworkModuleMode::GSM_2G_Only;
+  case static_cast<int>(NetworkModuleMode::WCDMA_3G_Only):
+    return NetworkModuleMode::WCDMA_3G_Only;
+  case static_cast<int>(NetworkModuleMode::LTE_4G_Only):
+    return NetworkModuleMode::LTE_4G_Only;
+  case static_cast<int>(NetworkModuleMode::Automatic):
+    return NetworkModuleMode::Automatic;
+  default:
+    MG_LOG_E_S("Unsupported or unreadable +CNMP mode: " + String(mode));
+    return NetworkModuleMode::Automatic;
+  }
+}
+
+void MAGELLAN_MQTT_4G_BOARD::ConnectivityModem::setNetworkMode(NetworkModuleMode mode)
+{
+  TinyGsm &modem = this->parent->getGSMModem();
+  const int networkMode = static_cast<int>(mode);
+
+  if (networkMode != static_cast<int>(NetworkModuleMode::Automatic) &&
+      networkMode != static_cast<int>(NetworkModuleMode::GSM_2G_Only) &&
+      networkMode != static_cast<int>(NetworkModuleMode::WCDMA_3G_Only) &&
+      networkMode != static_cast<int>(NetworkModuleMode::LTE_4G_Only))
+  {
+    MG_LOG_E_S("Unsupported +CNMP mode requested: " + String(networkMode));
+    return;
+  }
+
+  if (!modem.setNetworkMode(static_cast<uint8_t>(networkMode)))
+  {
+    MG_LOG_E_S("Failed to set +CNMP mode: " + String(networkMode));
+    return;
+  }
+
+  MG_LOG_I_S("Network mode set to +CNMP=" + String(networkMode));
+}
+
+String MAGELLAN_MQTT_4G_BOARD::ConnectivityModem::networkModeToString(NetworkModuleMode mode)
+{
+  switch (mode)
+  {
+  case NetworkModuleMode::GSM_2G_Only:
+    return "[ONLY GSM 2G]";
+  case NetworkModuleMode::WCDMA_3G_Only:
+    return "[ONLY WCDMA 3G]";
+  case NetworkModuleMode::LTE_4G_Only:
+    return "[ONLY LTE 4G]";
+  case NetworkModuleMode::Automatic:
+    return "[Automatic]";
+  default:
+    return "UNKNOWN (" + String(static_cast<int>(mode)) + ")";
+  }
 }
 
 void MAGELLAN_MQTT_4G_BOARD::ConnectivityModem::begin()
