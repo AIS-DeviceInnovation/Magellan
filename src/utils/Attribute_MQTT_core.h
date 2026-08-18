@@ -29,12 +29,8 @@ Released for private usage.
 #include "LittleFS.h"
 #endif
 
-// #if defined(ESP8266) && defined(USE_AIS_4G_BOARD)
-// #error "Please remove macro \"USE_AIS_4G_BOARD\". ESP8266 is not support using AIS 4G Board(ESP32)."
-// #endif
-
-#define _major_ver 1
-#define _feature_ver 5
+#define _major_ver 2
+#define _feature_ver 0
 #define _enhance_ver 0
 
 #define STRINGIFY(x) #x
