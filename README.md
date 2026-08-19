@@ -1,4 +1,4 @@
-![Library Version](https://img.shields.io/badge/Version-1.3.1-green)
+![Library Version](https://img.shields.io/badge/Version-2.0.0-green)
 
 # Magellan Library for Arduino
 
@@ -490,6 +490,36 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
    }
 ```
 >ℹ️ Information `หากอุปกรณ์ต้องการค่าเวลาไปใช้ไม่ว่าจะเป็นการ sync RTC Module หรืออื่นๆ สามารถ request ขอค่าเวลาจาก platform ได้โดยค่าเวลาจะเป็น UnixTimestamp format เช่น 1688011509` 
+
+### วิธีการ Sync เวลาใน ESP32
+
+ตั้งแต่ Library version `2.0.0` เป็นต้นไป สามารถใช้ค่า Unix Timestamp จาก Magellan Platform เพื่อตั้งค่า system clock ของ ESP32 ได้ โดยลงทะเบียน callback สำหรับ `UNIXTIME` แล้วเรียก `settimeofday()` เมื่อได้รับเวลา
+
+```cpp
+#include "sys/time.h"
+
+magel.getResponse(UNIXTIME, [](EVENTS events)
+{
+  struct timeval timeValue;
+  timeValue.tv_sec = events.Payload.toInt();
+  timeValue.tv_usec = 0;
+  settimeofday(&timeValue, NULL);
+});
+
+void loop()
+{
+  magel.loop();
+  magel.subscribesHandler([]()
+  {
+    magel.getServerTime();
+  });
+}
+```
+
+หลังจากตั้งค่าเวลาแล้ว สามารถอ่านเวลาท้องถิ่นด้วย `getLocalTime()` ได้ โดยกำหนด Timezone ผ่าน `setenv("TZ", "ICT-7", 1)` และเรียก `tzset()` ก่อนใช้งาน
+
+ตัวอย่างเต็ม: [getServerTimeAndSync](examples/example_MQTT/AIS_4G_Board/Magellan/getServerTimeAndSync/getServerTimeAndSync.ino)
+
  * `Callback`
    * `magel.getControl(callback void(String controlKey, String controlValue))` ใช้รับค่า Control เมื่อเกิด Control events จาก Widget บนหน้าเว็บ Magellan Platform ซึ่งจะได้รับข้อมูลเป็น Key และ Value จากการ Control ในรูปแบบ Plain Text
    * `magel.getControl(String focusKey, callback void(String controlValue))` ใช้รับค่า Control เมื่อเกิด Control events จาก Widget บนหน้าเว็บ Magellan Platform ซึ่งจะได้รับข้อมูล Value จากการ Control เฉพาะ focusKey ที่ผู้ใช้ได้กำหนดไว้เท่านั้น ในรูปแบบ Plain Text
@@ -617,6 +647,8 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
      * [saveClientConfig](examples/example_MQTT/saveClientConfig/saveClientConfig.ino) - ตัวอย่างการส่งข้อมูลจากเซนเซอร์พร้อม Timestamp บนอุปกรณไปบน Magellan Platform 
    * `getServerTime`
      * [getServerTime](examples/example_MQTT/getServerTime/getServerTime.ino) - ตัวอย่างการขอเวลา Timestamp จาก Server ของ Magellan Platform 
+   * `getServerTimeAndSync`
+     * [getServerTimeAndSync](examples/example_MQTT/AIS_4G_Board/Magellan/getServerTimeAndSync/getServerTimeAndSync.ino) - ตัวอย่างการขอเวลาจาก Magellan Platform และ Sync system clock ของ ESP32
    * `utilityTimeConverter`
      * [utilityTimeConverter](examples/example_MQTT/utilityTimeConverter/utilityTimeConverter.ino) - ตัวอย่างการแปลงค่า Utility Time
    * `OTA`
@@ -630,7 +662,7 @@ Magellan คือ IoT Platform (Internet of Things Platform) ครบวงจ
 
 ---
 > <span style="color:green"><b>💡 Tip</b></span><br>
-> ## [AIS 4G Board](https://www.ais.th/business/enterprise/technology-and-solution/5G-and-iot/hardware/ais-4g-board)<br> Feature support สำหรับ Library Magellan version `1.3.0` ขึ้นไป.<br>
+> ## [AIS 4G Board](https://www.ais.th/business/enterprise/technology-and-solution/5G-and-iot/hardware/ais-4g-board)<br> Feature support สำหรับ Library Magellan version `2.0.0` ขึ้นไป.<br>
 > โดย Interface ในการเชื่อมต่อ GSM สัญญาณ 4G จะใช้ 
 > Based on Library [TinyGSM](https://github.com/vshymanskyy/TinyGSM)
 > ซึ่งต่างจาก  Library [^1].AIS 4G Board ด้านล่าง. <br>
@@ -673,9 +705,27 @@ MAGELLAN_MQTT_4G_BOARD magel;
     * `magel.initSerialModem()` ใช้งานสำหรับ initailized Serial เข้ากับ Modem.
     * `magel.connectModem()` ใช้สำหรับเชื่อมต่อ GSM Modem.
     * `magel.checkModem()` ใช้สำหรับตรวจสอบการเชื่อมต่อ GSM. และ reconnect ใหม่เมื่อ GSM มีการถูกตัดการเชื่อมต่อ
-    * `magel.InitGSM()` เป็น function Wrap Sequence การทำงานเพื่อเปิดใช้งาน GSM ซึ่งภายในจะเป็นเรียงการทำงานจาก Function GSM Helper.
-    * `magel.getGSMClient()` ใช้สำหรับเข้าถึง GSMClient เพื่อใช้ใน feature ที่จำเป็นต้องใช้ GSMClient
-    * `magel.getGSMModem()` ใช้สำหรับเข้าถึง GSMClient เพื่อใช้ใน feature ที่จำเป็นต้องใช้ GSMModem เช่น ทดสอบ AT Command หรือเปิดปิดบาง Feature ที่ไม่ได้ Binding ไว้
+    * `magel.initGSM()` เป็น function wrapper สำหรับเรียงลำดับการเริ่มต้นใช้งาน GSM
+    * `magel.handleModemMagellan()` ตรวจสอบ modem และจัดการการเชื่อมต่อ MQTT ระหว่างที่ `magel.loop()` ทำงาน
+    * `magel.getGSMClient()` ใช้เข้าถึง `TinyGsmClient` สำหรับ feature ที่ต้องใช้ GSM client
+    * `magel.getGSMModem()` ใช้เข้าถึง `TinyGsm` สำหรับส่ง AT Command หรือใช้งาน feature ของโมเด็มที่ไม่ได้ผูกไว้ใน API
+
+  * `ConnectivityModem`
+    * `magel.GSMModem.begin()` เริ่มต้นการทำงานของโมเด็มผ่าน TinyGSM
+    * `magel.GSMModem.handle()` ตรวจสอบสถานะโมเด็มและ reconnect เมื่อจำเป็น ควรเรียกเป็นระยะใน `loop()` หากอ่านข้อมูลโมเด็มโดยตรง
+    * `magel.GSMModem.getClient()` และ `magel.GSMModem.getModem()` คืนค่า `TinyGsmClient` และ `TinyGsm`
+    * `magel.GSMModem.getNetworkMode()` อ่านโหมดเครือข่ายปัจจุบัน
+    * `magel.GSMModem.setNetworkMode(NetworkModuleMode mode)` ตั้งโหมดเป็น `Automatic`, `GSM_2G_Only`, `WCDMA_3G_Only` หรือ `LTE_4G_Only`
+    * `magel.GSMModem.networkModeToString(NetworkModuleMode mode)` แปลงโหมดเครือข่ายเป็นข้อความ
+
+  * `SignalAnalysis`
+    * `magel.getSignalStrength()` อ่านความแรงสัญญาณรวมในหน่วย dBm
+    * `magel.getRSSIQuality()` อ่านระดับคุณภาพ RSSI ในรูปแบบข้อความ
+    * `magel.radioSignal.getDetailedSignal()` อ่านข้อมูล LTE และคืนค่าเป็น `LTE_Signal_INFO`
+    * `LTE_Signal_INFO.mode` และ `LTE_Signal_INFO.band` แสดงโหมดและ band ของเครือข่าย
+    * `LTE_Signal_INFO.rsrq`, `LTE_Signal_INFO.rsrp`, `LTE_Signal_INFO.rssi` และ `LTE_Signal_INFO.sinr` แสดงค่าคุณภาพและความแรงสัญญาณ
+
+  **remark:** หลังใช้ `setNetworkMode()` ควรรีสตาร์ตบอร์ดหรือเริ่มต้นโมเด็มใหม่เพื่อให้การเชื่อมต่อใช้โหมดใหม่ ดูตัวอย่าง [configPreferedBand](examples/example_MQTT/AIS_4G_Board/configPreferedBand/configPreferedBand.ino)
   
   * `Builtin Sensors`
       * `magel.builtInSensor.begin()` เริ่มต้นการใช้งาน builtin sensor SHT40 (เปิดใช้อัตโนมัติอยู่แล้วหากใช้งาน magellan)
@@ -694,6 +744,15 @@ MAGELLAN_MQTT_4G_BOARD magel;
       * `magel.gps.readLocation()` อ่านตำแหน่งในรูปแบบข้อความ (lat,lon)
       * `magel.gps.getUnixTime()` อ่านเวลาในรูปแบบ Unix Timestamp
       * `magel.gps.getCurrentGPSData()` อ่านข้อมูล GPS ทั้งชุดในรูปแบบ `GPS_Data`
+      * `Time synchronization`
+        * `magel.getServerTime()` ขอ Unix Timestamp จาก Magellan Platform
+        * `magel.getResponse(UNIXTIME, callback)` รับ Unix Timestamp ผ่าน callback เพื่อนำไปตั้ง system clock ของ ESP32 ด้วย `settimeofday()`
+        * ตัวอย่างเต็ม: [getServerTimeAndSync](examples/example_MQTT/AIS_4G_Board/Magellan/getServerTimeAndSync/getServerTimeAndSync.ino)
+      * `Examples`
+        * [ATCommand](examples/example_MQTT/AIS_4G_Board/ATCommand/ATCommand.ino) - ส่ง AT Command ไปยังโมเด็มผ่าน Serial Monitor
+        * [GPS](examples/example_MQTT/AIS_4G_Board/GPS/GPS.ino) - อ่าน latitude, longitude, altitude, speed, course และเวลา UTC จาก GPS
+        * [RadioSignal](examples/example_MQTT/AIS_4G_Board/RadioSignal/RadioSignal.ino) - อ่านโหมด band และค่า RSRQ, RSRP, RSSI, SINR ของสัญญาณ LTE
+        * [configPreferedBand](examples/example_MQTT/AIS_4G_Board/configPreferedBand/configPreferedBand.ino) - ตั้งค่าโมเด็มเป็น LTE 4G Only
 * `RS485`
    * [RS485_PZEM_016_reportDataTo_Magellan](examples/example_MQTT/AIS_4G_Board/Magellan/RS485_PZEM_016_reportDataTo_Magellan/RS485_PZEM_016_reportDataTo_Magellan.ino) - ตัวอย่างการอ่านค่าแรงดันไฟฟ้า กระแสไฟฟ้า พลังงานไฟฟ้า จาก Power Meter รุ่น PZEM-016 แล้วส่งค่าไปยัง Magellan
 > <span style="color:green"><b>💡 Tip</b></span><br>
