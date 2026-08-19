@@ -46,9 +46,8 @@ void loop()
 {
     magel.loop();
     reconnectWiFi(magel);
-    magel.subscribes([]()
+    magel.subscribesHandler([]()
                      {
-                         magel.subscribe.getServerTime(PLAINTEXT);
                          magel.getServerTime(); // request time from magellan server
                      });
     magel.interval(1, []()

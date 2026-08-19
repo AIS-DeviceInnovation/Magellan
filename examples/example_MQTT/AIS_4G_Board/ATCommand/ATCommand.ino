@@ -28,7 +28,6 @@ void setup()
 
 void loop()
 {
-  gsmBoard.handle();         // check modem status and reconnect if needed
   if (Serial.available() > 0) // handle user input from Serial Monitor
   {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));

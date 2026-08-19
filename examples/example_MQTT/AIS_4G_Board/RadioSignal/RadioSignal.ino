@@ -1,13 +1,20 @@
 #include <Arduino.h>
-
 #include <MAGELLAN_MQTT_4G_BOARD.h>
 MAGELLAN_MQTT_4G_BOARD board;
 MAGELLAN_MQTT_4G_BOARD::ConnectivityModem &gsmBoard = board.GSMModem;
+
 
 void setup()
 {
   Serial.begin(115200);
   gsmBoard.begin();
+
+  NetworkModuleMode NetworkMode = board.GSMModem.getNetworkMode();
+  Serial.println(F("==== Network Module Mode Report ==="));
+  Serial.print(F("Network Module Mode: "));
+  String NetworkModeStr = board.GSMModem.networkModeToString(NetworkMode);
+  Serial.println(NetworkModeStr);
+  Serial.println(F("==================================="));
 }
 
 void loop()

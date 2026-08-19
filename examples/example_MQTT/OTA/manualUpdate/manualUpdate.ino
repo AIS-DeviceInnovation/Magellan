@@ -58,9 +58,7 @@ void loop()
 {
   magel.loop();
   reconnectWiFi(magel);
-  magel.subscribes([](){
-    magel.subscribe.serverConfig(PLAINTEXT);
-    magel.subscribe.control(PLAINTEXT);
+  magel.subscribesHandler([](){
     checkStatusUpdate = magel.OTA.checkUpdate(); // checkUpdate once time after connect and after reconnect
     // subscribe function here!
   });

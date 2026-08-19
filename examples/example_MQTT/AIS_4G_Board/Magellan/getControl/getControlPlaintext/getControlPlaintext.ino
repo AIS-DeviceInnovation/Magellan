@@ -30,7 +30,6 @@ void loop()
 {
   magel.loop();
   magel.subscribesHandler([]() {
-    magel.subscribe.control(PLAINTEXT); // subscribe server control content type PLAINTEXT
   });
   magel.interval(10, []() { // time interval function inside every 10000 millis
 

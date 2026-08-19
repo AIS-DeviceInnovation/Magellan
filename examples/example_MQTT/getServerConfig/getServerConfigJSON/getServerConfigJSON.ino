@@ -41,8 +41,7 @@ void loop()
 {
   magel.loop();
   reconnectWiFi(magel);
-  magel.subscribes([](){
-    magel.subscribe.serverConfig(); // subscribe server config content type JSON
+  magel.subscribesHandler([](){
   });
   magel.interval(10,[](){ //time interval function inside every 10000 millis
     magel.serverConfig.request(); // request server config content type JSON

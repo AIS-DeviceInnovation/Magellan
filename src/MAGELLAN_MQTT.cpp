@@ -40,6 +40,7 @@ Modified: 22 dec 2025.
 #include "MAGELLAN_MQTT.h"
 
 cb_on_disconnect func_on_disc;
+cb_on_connect func_on_conn;
 
 void adjust_BufferForMedia(size_t len_payload);
 struct JsonDocUtils
@@ -139,6 +140,15 @@ void MAGELLAN_MQTT::begin(Magellan_Setting _setting)
     delay(5000);
     ESP.restart();
   }
+
+  this->pubstate();
+}
+
+void MAGELLAN_MQTT::pubstate()
+{
+  this->clientConfig.add("versionSDK", String(lib_model_device) + "-" + String(lib_ver));
+  this->clientConfig.add("preferredMode", "ExternalClient");
+  this->clientConfig.save();
 }
 
 void MAGELLAN_MQTT::beginCustom(String _thingIden, String _thingSecret, String _imei, String _host, int _port, uint16_t bufferSize)
@@ -163,6 +173,8 @@ void MAGELLAN_MQTT::beginCustom(String _thingIden, String _thingSecret, String _
   coreMQTT->activeOTA(attr.calculate_chunkSize, true);
 }
 
+const unsigned long hb_interval = 60000 * 30; // 30 minutes
+bool flag_cb_on_conn = false;
 void MAGELLAN_MQTT::loop()
 {
 #if defined(USE_4G_BOARD) || defined(USE_AIS_4G_BOARD)
@@ -171,13 +183,34 @@ void MAGELLAN_MQTT::loop()
     this->HandleModem();
   }
 #endif
-  this->coreMQTT->loop();
+  attr.mqtt_client->loop();
+  // this->coreMQTT->loop();
   if (attr.flagAutoOTA)
     this->coreMQTT->handleOTA(true);
 
-  if ((func_on_disc != NULL) && (!isConnected()))
+  if (coreMQTT->isConnected() && !flag_cb_on_conn)
   {
-    func_on_disc();
+    if (func_on_disc != NULL)
+    {
+      func_on_conn();
+    }
+    flag_cb_on_conn = true;
+  }
+  else if (!coreMQTT->isConnected() && flag_cb_on_conn)
+  {
+    if (func_on_disc != NULL)
+    {
+      func_on_disc();
+    }
+    flag_cb_on_conn = false;
+  }
+  this->coreMQTT->loop();
+
+  static unsigned long last_hb_time = 0;
+  if (millis() - last_hb_time >= hb_interval || last_hb_time == 0)
+  {
+    this->heartbeat();
+    last_hb_time = millis();
   }
 }
 
@@ -631,10 +664,10 @@ String MAGELLAN_MQTT::Information::getThingToken()
 void MAGELLAN_MQTT::Information::getBoardInfo()
 {
   MG_LOG_I("#====== Board information =========");
-MG_LOG_I_S("ThingIdentifier: " + String(coreMQTT->readThingIdentifier()));
-MG_LOG_I_S("ThingSecret: " + String(coreMQTT->readThingSecret()));
+  MG_LOG_I_S("ThingIdentifier: " + String(coreMQTT->readThingIdentifier()));
+  MG_LOG_I_S("ThingSecret: " + String(coreMQTT->readThingSecret()));
   if (setting.IMEI != "null" && setting.IMEI.length() > 8)
-MG_LOG_I_S("IMEI: " + String(setting.IMEI));
+    MG_LOG_I_S("IMEI: " + String(setting.IMEI));
   MG_LOG_I("#=================================");
 }
 
@@ -701,7 +734,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, String sensorValue)
   JsonDocUtils validateJSON_doc = readSafetyCapacity_Json_doc(*attr.docSensor);
   if (sensorValue == "null")
   {
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" failed, this function does not allow set value \"null\"");
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" failed, this function does not allow set value \"null\"");
     return;
   }
   else if (validateJSON_doc.used > validateJSON_doc.safety_size * 0.8f)
@@ -710,7 +743,7 @@ MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" failed, this function does not all
     // attr.docSensor->clear();
     coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else if (sensorValue.length() > 10000 && coreMQTT->readBufferSensor(*attr.docSensor) < sensorValue.length())
@@ -720,7 +753,7 @@ MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + 
     // attr.docSensor->clear();
     coreMQTT->adjustBufferSensor(sensorValue.length() + bufJSON.length() + 3000);
     deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -734,7 +767,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, const char *sensorValue)
   JsonDocUtils validateJSON_doc = readSafetyCapacity_Json_doc(*attr.docSensor);
   if (sensorValue == "null")
   {
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" failed, this function does not allow set value \"null\"");
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" failed, this function does not allow set value \"null\"");
     return;
   }
   else if (validateJSON_doc.used > validateJSON_doc.safety_size * 0.8f)
@@ -743,7 +776,7 @@ MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" failed, this function does not all
     // attr.docSensor->clear();
     coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
 
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     deserializeJson(*attr.docSensor, bufJSON);
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
@@ -754,7 +787,7 @@ MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + 
     // attr.docSensor->clear();
     coreMQTT->adjustBufferSensor(strlen(sensorValue) + bufJSON.length() + 3000);
     deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -772,7 +805,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, int sensorValue)
     // attr.docSensor->clear();
     coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -790,7 +823,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, float sensorValue)
     // attr.docSensor->clear();
     coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -808,7 +841,7 @@ void MAGELLAN_MQTT::Sensor::add(String sensorKey, boolean sensorValue)
     // attr.docSensor->clear();
     coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
     deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+    MG_LOG_I_S("# add [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
     coreMQTT->addSensor(sensorKey, sensorValue, *attr.docSensor);
   }
   else
@@ -837,8 +870,8 @@ void MAGELLAN_MQTT::Sensor::report()
     }
     else if (bufferPlayload.indexOf("null") == -1 && len > attr.max_payload_report)
     {
-MG_LOG_I_S("# [ERROR] Current payload length : " + String(len));
-MG_LOG_I_S("# [ERROR] Sensor.report() Failed payload is geather than: " + String(attr.max_payload_report));
+      MG_LOG_I_S("# [ERROR] Current payload length : " + String(len));
+      MG_LOG_I_S("# [ERROR] Sensor.report() Failed payload is geather than: " + String(attr.max_payload_report));
       coreMQTT->clearSensorBuffer(*attr.docSensor);
       return;
     }
@@ -948,8 +981,8 @@ ResultReport MAGELLAN_MQTT::Sensor::report(RetransmitSetting &retrans)
         }
         else if (bufferPlayload.indexOf("null") == -1 && len > attr.max_payload_report)
         {
-MG_LOG_I_S("# [ERROR] Current payload length : " + String(len));
-MG_LOG_I_S("# [ERROR] Sensor.report() Failed payload is geather than: " + String(attr.max_payload_report));
+          MG_LOG_I_S("# [ERROR] Current payload length : " + String(len));
+          MG_LOG_I_S("# [ERROR] Sensor.report() Failed payload is geather than: " + String(attr.max_payload_report));
           coreMQTT->clearSensorBuffer(*attr.docSensor);
           result.msgId = retrans.msgId;
           return result;
@@ -996,7 +1029,7 @@ void MAGELLAN_MQTT::Sensor::remove(String sensorKey)
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: \"" + sensorKey + "\" to Remove");
+    MG_LOG_I_S("Not found [Key]: \"" + sensorKey + "\" to Remove");
   }
 }
 
@@ -1016,9 +1049,9 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, String sensorValue)
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
       coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
-MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else if (sensorValue.length() > 10000 && sensorValue.length() > coreMQTT->readBufferSensor(*attr.docSensor))
@@ -1028,18 +1061,18 @@ MG_LOG_I_S("Updated [Key]: " + sensorKey);
       // attr.docSensor->clear();
       coreMQTT->adjustBufferSensor(sensorValue.length() + bufJSON.length() + 3000);
       deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: \"" + sensorKey + "\" to update");
+    MG_LOG_I_S("Not found [Key]: \"" + sensorKey + "\" to update");
   }
 }
 
@@ -1053,9 +1086,9 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, const char *sensorValue)
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
       coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
-MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else if (strlen(sensorValue) > 10000 && strlen(sensorValue) > coreMQTT->readBufferSensor(*attr.docSensor))
@@ -1065,18 +1098,18 @@ MG_LOG_I_S("Updated [Key]: " + sensorKey);
       // attr.docSensor->clear();
       coreMQTT->adjustBufferSensor(strlen(sensorValue) + bufJSON.length() + 3000);
       deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
   }
 }
 
@@ -1090,20 +1123,20 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, int sensorValue)
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
       coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
-MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
   }
 }
 
@@ -1117,20 +1150,20 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, float sensorValue)
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
       coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
-MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
   }
 }
 
@@ -1144,20 +1177,20 @@ void MAGELLAN_MQTT::Sensor::update(String sensorKey, boolean sensorValue)
       String bufJSON = this->toJSONString();
       // attr.docSensor->clear();
       coreMQTT->adjustBufferSensor(validateJSON_doc.max_size + 2048);
-MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
+      MG_LOG_I_S("# Update [Key] \"" + sensorKey + "\" JsonBuffer is full adjust to: " + String(coreMQTT->readBufferSensor(*attr.docSensor)));
       deserializeJson(*attr.docSensor, bufJSON);
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
     else
     {
-MG_LOG_I_S("Updated [Key]: " + sensorKey);
+      MG_LOG_I_S("Updated [Key]: " + sensorKey);
       coreMQTT->updateSensor(sensorKey, sensorValue, *attr.docSensor);
     }
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + sensorKey + " to update");
   }
 }
 
@@ -1180,7 +1213,7 @@ void MAGELLAN_MQTT::Sensor::Location::add(String LocationKey, String latitude, S
   }
   else
   {
-MG_LOG_I_S("# [" + LocationKey + "] Can't add Location latitude or longtitude is invalid (not number)");
+    MG_LOG_I_S("# [" + LocationKey + "] Can't add Location latitude or longtitude is invalid (not number)");
   }
 }
 
@@ -1193,12 +1226,12 @@ void MAGELLAN_MQTT::Sensor::Location::update(String LocationKey, double latitude
     sprintf(b_lat, "%f", latitude);
     sprintf(b_lng, "%f", longtitude);
     String location = String(b_lat) + "," + String(b_lng);
-MG_LOG_I_S("Updated [Key]: " + LocationKey);
+    MG_LOG_I_S("Updated [Key]: " + LocationKey);
     coreMQTT->updateSensor(LocationKey, location, *attr.docSensor);
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + LocationKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + LocationKey + " to update");
   }
 }
 
@@ -1209,17 +1242,17 @@ void MAGELLAN_MQTT::Sensor::Location::update(String LocationKey, String latitude
     if (coreMQTT->findKey(LocationKey, *attr.docSensor))
     {
       String location = String(latitude) + "," + String(longtitude);
-MG_LOG_I_S("Updated [Key]: " + LocationKey);
+      MG_LOG_I_S("Updated [Key]: " + LocationKey);
       coreMQTT->updateSensor(LocationKey, location, *attr.docSensor);
     }
     else
     {
-MG_LOG_I_S("Not found [Key]: \"" + LocationKey + "\" to update");
+      MG_LOG_I_S("Not found [Key]: \"" + LocationKey + "\" to update");
     }
   }
   else
   {
-MG_LOG_I_S("# [" + LocationKey + "] Can't update Location latitude or longtitude is invalid (not number)");
+    MG_LOG_I_S("# [" + LocationKey + "] Can't update Location latitude or longtitude is invalid (not number)");
   }
 }
 
@@ -1243,7 +1276,7 @@ void MAGELLAN_MQTT::ClientConfig::add(String clientConfigKey, String clientConfi
 {
   if (clientConfigValue == "null")
   {
-MG_LOG_I_S("# add [Key] \"" + clientConfigKey + "\" failed, this function does not allow to set value \"null\"");
+    MG_LOG_I_S("# add [Key] \"" + clientConfigKey + "\" failed, this function does not allow to set value \"null\"");
   }
   else
   {
@@ -1255,7 +1288,7 @@ void MAGELLAN_MQTT::ClientConfig::add(String clientConfigKey, const char *client
 {
   if (clientConfigValue == "null")
   {
-MG_LOG_I_S("# add [Key] " + clientConfigKey + " failed, this function does not allow to set value \"null\"");
+    MG_LOG_I_S("# add [Key] " + clientConfigKey + " failed, this function does not allow to set value \"null\"");
   }
   else
   {
@@ -1311,7 +1344,7 @@ void MAGELLAN_MQTT::ClientConfig::remove(String clientConfigKey)
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: \"" + clientConfigKey + "\" to Remove");
+    MG_LOG_I_S("Not found [Key]: \"" + clientConfigKey + "\" to Remove");
   }
 }
 
@@ -1324,12 +1357,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, String clientCo
 {
   if (coreMQTT->findKey(clientConfigKey, attr.docClientConf))
   {
-MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
+    MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1337,12 +1370,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, const char *cli
 {
   if (findKey(clientConfigKey))
   {
-MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
+    MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1350,12 +1383,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, int clientConfi
 {
   if (findKey(clientConfigKey))
   {
-MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
+    MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1363,12 +1396,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, float clientCon
 {
   if (findKey(clientConfigKey))
   {
-MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
+    MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1376,12 +1409,12 @@ void MAGELLAN_MQTT::ClientConfig::update(String clientConfigKey, boolean clientC
 {
   if (findKey(clientConfigKey))
   {
-MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
+    MG_LOG_I_S("Updated [Key]: " + clientConfigKey);
     coreMQTT->updateSensor(clientConfigKey, clientConfigValue, attr.docClientConf);
   }
   else
   {
-MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
+    MG_LOG_I_S("Not found [Key]: " + clientConfigKey + " to update");
   }
 }
 
@@ -1543,6 +1576,24 @@ void MAGELLAN_MQTT::onDisconnect(cb_on_disconnect cb_disc)
   {
     func_on_disc = cb_disc;
   }
+}
+
+void MAGELLAN_MQTT::onReconnect(cb_on_reconnect cb_recon)
+{
+  if (cb_recon)
+  {
+    this->coreMQTT->onReconn(cb_recon);
+  }
+}
+void MAGELLAN_MQTT::onReconnectingLoop(cb_on_reconnect cb_recon_continue)
+{
+  cb_on_reconnect middle_cb_recon = cb_on_reconnect([this, cb_recon_continue]()
+                                                     {
+    if (cb_recon_continue)
+    {
+      cb_recon_continue();
+    } });
+  this->coreMQTT->onReconnContinue(middle_cb_recon);
 }
 
 // OTA Feature //////
@@ -1931,7 +1982,7 @@ void MAGELLAN_MQTT::OnTheAir::autoUpdate(boolean flagSetAuto)
     attr.isBypassAutoUpdate = false;
     coreMQTT->registerDownloadOTA();
   }
-MG_LOG_I_S("# Set auto update mode: " + String((attr.flagAutoOTA == true) ? "ENABLE" : "DISABLE"));
+  MG_LOG_I_S("# Set auto update mode: " + String((attr.flagAutoOTA == true) ? "ENABLE" : "DISABLE"));
 }
 
 boolean MAGELLAN_MQTT::OnTheAir::getAutoUpdate()
@@ -2074,7 +2125,7 @@ void adjust_BufferForMedia(size_t len_payload)
   }
   else
   {
-MG_LOG_I_S("# Sensors payload is too large geater than: " + String(attr.max_payload_report));
+    MG_LOG_I_S("# Sensors payload is too large geater than: " + String(attr.max_payload_report));
     return;
   }
 }

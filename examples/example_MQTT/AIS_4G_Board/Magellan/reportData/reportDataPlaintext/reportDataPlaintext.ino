@@ -19,7 +19,6 @@ void loop()
 {
   magel.loop();
   magel.subscribesHandler([]() {
-    magel.subscribe.report.response(PLAINTEXT); // optional register for get Resp report
   });
   magel.interval(10, []() {
     magel.report.send("temperature", String(random(25, 34)));

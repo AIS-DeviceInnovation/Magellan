@@ -48,8 +48,6 @@ void loop()
 {
   magel.loop();
   magel.subscribesHandler([]() {
-    magel.subscribe.serverConfig(PLAINTEXT);
-    magel.subscribe.control(PLAINTEXT);
     checkStatusUpdate = magel.OTA.checkUpdate(); // check once after connect and after reconnect
   });
   magel.interval(10, []() { // time interval function inside every 10000 millis

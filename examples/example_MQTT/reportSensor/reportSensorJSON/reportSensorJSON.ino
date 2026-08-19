@@ -33,9 +33,8 @@ void loop()
 {
   magel.loop();
   reconnectWiFi(magel);
-  magel.subscribes([]()
+  magel.subscribesHandler([]()
   {
-    magel.subscribe.report.response(); // optional register for get Resp report
   });
   magel.interval(10, [](){   
     //{1} 

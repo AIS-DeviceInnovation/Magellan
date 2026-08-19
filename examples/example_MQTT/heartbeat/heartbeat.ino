@@ -33,8 +33,7 @@ void loop()
 {
   magel.loop();
   reconnectWiFi(magel);
-  magel.subscribes([](){
-    magel.subscribe.heartbeat.response(); // subscribe server config content type JSON
+  magel.subscribesHandler([](){
   });
   magel.interval(10,[](){ //time interval function inside every 10 sec
 

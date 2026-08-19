@@ -36,7 +36,6 @@ void loop()
 {
   magel.loop();
   magel.subscribesHandler([]() {
-    magel.subscribe.control(); // subscribe server control content type JSON
   });
   magel.interval(10, []() { // time interval function inside every 10000 millis
 

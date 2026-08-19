@@ -19,7 +19,6 @@ void loop()
 {
   magel.loop();
   magel.subscribesHandler([]() {
-    magel.subscribe.report.response(); // optional register for get Resp report
   });
   magel.interval(10, []() {
     //{1.} auto buildJSON and reportJSON

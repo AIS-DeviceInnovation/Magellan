@@ -1579,6 +1579,7 @@ void MAGELLAN_MQTT_device_core::reconnectMagellan()
 
   while (!isConnected())
   {
+    const int reconn_sec = 3; // seconds
     srand(time(NULL));
     int randnum = rand() % 10000;   // generate number concat in Client id
     int randnum_2 = rand() % 10000; // generate number concat in Client id
@@ -1598,8 +1599,11 @@ void MAGELLAN_MQTT_device_core::reconnectMagellan()
       int mqtt_state = this->client->state();
       MG_LOG_I("failed, reconnect =");
       MG_LOG_I_S(mqtt_state);
-      MG_LOG_I(" try again in 5 seconds");
-
+      MG_LOG_I(" try again in %d seconds", reconn_sec);
+      if (this->func_on_recon != nullptr)
+      {
+        this->func_on_recon();
+      }
       if (mqtt_state == -2)
       {
         MG_LOG_E("# MQTT_CONNECT_FAILED (-2): network or DNS resolve failed");
@@ -1617,7 +1621,7 @@ void MAGELLAN_MQTT_device_core::reconnectMagellan()
 #ifdef ESP8266
       delay(5000); // ESP8266 needs extra time for DNS recovery between retries
 #else
-      delay(3000);
+      delay(reconn_sec * 1000); // ESP32 can use a shorter delay
 #endif
       recon_attempt++;
       MG_LOG_I("# attempt connect on :");
@@ -3096,20 +3100,21 @@ void MAGELLAN_MQTT_device_core::getEndPoint()
   }
 }
 
-void MAGELLAN_MQTT_device_core::magellanCentric()
+void MAGELLAN_MQTT_device_core::magellanCentric(String endpoint = _host_centric, int port = mgCentricPort)
 {
   if (!isConnected())
   {
     while (!isConnected())
     {
+      const int reconn_sec = 3;
       srand(time(NULL));
       int randnum = rand() % 10000;   // generate number concat in Client id
       int randnum_2 = rand() % 10000; // generate number concat in Client id
       String client_idBuff = "Centric_Other_" + this->thingIden + "_" + String(randnum) + "_" + String(randnum_2) + "_" + String(lib_ver);
       client_id = client_idBuff;
       MG_LOG_I("#Attempting connection ...");
-      this->host = _host_centric;
-      this->port = mgCentricPort; // auto_assigned Client ID with ThingIdent
+      this->host = endpoint;
+      this->port = port; // auto_assigned Client ID with ThingIdent
       this->client->setBufferSize(this->_default_bufferSize);
       this->setCallback_msgHandle();
       this->client->setServer(this->host.c_str(), this->port);
@@ -3123,18 +3128,30 @@ void MAGELLAN_MQTT_device_core::magellanCentric()
 
       else
       {
-        MG_LOG_I_S("failed, reconnect =");
-        MG_LOG_I_S(this->client->state());
-        MG_LOG_I(" try again in 5 seconds");
+        MG_LOG_I_S("failed, reconnect =" + String(this->client->state()) + " try again in " + String(reconn_sec) + " seconds");
         MG_LOG_I_S("Count Attemp Reconnect: ");
-        recon_attempt++;
         MG_LOG_I_S(recon_attempt);
-        delay(5000);
-        if (recon_attempt >= MAXrecon_attempt)
+        
+        unsigned long startTime = millis();
+        while (millis() - startTime < reconn_sec * 1000UL)
         {
-          MG_LOG_I_S(" attempt to connect more than: " + String(MAXrecon_attempt) + " Restart Board");
+          if (this->func_on_recon_continue != nullptr)
+          {
+            this->func_on_recon_continue();
+          }
+          delay(10);
+        }
+        recon_attempt++;
+        // delay(reconn_sec * 1000);
+#ifdef USE_ATTEMPT_LIMIT
+        if (recon_attempt >= MAX_ATTEMPT_RECONNECT)
+        {
+          MG_LOG_I_S(" attempt to connect more than " + String(MAX_ATTEMPT_RECONNECT) + " Restart Board");
           ESP.restart();
         }
+#else
+        MG_LOG_I_S(F("USE_MAX_ATTEMPT_RECONNECT is disabled(0), try to connect until success no restart board"));
+#endif
       }
     }
     getEndPoint();

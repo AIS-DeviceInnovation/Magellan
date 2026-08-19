@@ -43,6 +43,23 @@
 #endif
 #endif
 
+// Max reconnect attempts before board restart (default: 1)  1: enable, 0: disable
+// Override via platformio.ini: build_flags = -DUSE_MAX_ATTEMPT_RECONNECT=1
+#ifndef USE_MAX_ATTEMPT_RECONNECT
+#define USE_MAX_ATTEMPT_RECONNECT 1
+#if USE_MAX_ATTEMPT_RECONNECT
+#ifndef USE_ATTEMPT_LIMIT
+#define USE_ATTEMPT_LIMIT
+#endif
+#endif
+#endif
+
+// Max reconnect attempts before board restart (default: 10)
+// Override via platformio.ini: build_flags = -DMAX_ATTEMPT_RECONNECT=10
+#ifndef MAX_ATTEMPT_RECONNECT
+#define MAX_ATTEMPT_RECONNECT 10
+#endif
+
 
 #if MAGELLAN_USE_ARDUINOJSON7
 #include <ArduinoJson.h>
